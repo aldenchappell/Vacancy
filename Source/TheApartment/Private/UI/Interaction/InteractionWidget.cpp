@@ -7,17 +7,6 @@
 #include "Components/TextBlock.h"
 #include "Components/WidgetComponent.h"
 
-UInteractionWidget::UInteractionWidget(const FObjectInitializer& ObjectInitializer)
-{
-	InteractionIcon = ObjectInitializer.CreateDefaultSubobject<UImage>(this, TEXT("InteractionIcon"));
-	InteractionIcon->SetBrushFromTexture(nullptr);
-	InteractionText = ObjectInitializer.CreateDefaultSubobject<UTextBlock>(this, TEXT("InteractionText"));
-	InteractionText->SetText(FText::GetEmpty());
-
-	
-}
-
-
 void UInteractionWidget::NativeConstruct()
 {
 	Super::NativeConstruct();

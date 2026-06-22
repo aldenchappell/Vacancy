@@ -39,5 +39,11 @@ public:
 	FInteractionVisualInfo GetInteractionVisualInfo() const;
 
 	UFUNCTION(BlueprintNativeEvent, Category="Interaction")
+	TSubclassOf<UVacancyInteractionBase> GetInteractionClass() const;
+	
+	UFUNCTION(BlueprintNativeEvent, Category="Interaction")
 	UVacancyInteractionBase* GetInteraction() const;
+
+	UFUNCTION(BlueprintNativeEvent, Category="Interaction")
+	USceneComponent* GetInteractionTransformComponent() const;
 };

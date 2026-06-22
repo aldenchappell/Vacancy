@@ -159,7 +159,6 @@ void UPlayerInteractionComponent::ScanForInteractables()
 		const float DistanceToInteractable = FVector::Dist(PotentialInteractable->GetActorLocation(), PlayerCharacterPtr->GetActorLocation());
 		if (DistanceToInteractable > ValidationData.MaxInteractionDistance)
 		{
-			HitResults.Remove(HitResult); // Remove hits that are not valid interactables or are out of range
 			continue; // If the potential interactable is out of range, skip to the next hit
 		}
 
@@ -168,7 +167,6 @@ void UPlayerInteractionComponent::ScanForInteractables()
 			: false;
 		if (!bIsInteractionValid)
 		{
-			HitResults.Remove(HitResult); // Remove hits that are not currently interactable
 			continue; // If the potential interactable is not valid for interaction, skip to the next hit
 		}
 

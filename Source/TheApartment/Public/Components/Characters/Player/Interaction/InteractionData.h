@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "InteractionData.generated.h"
 
 UENUM(BlueprintType)
 enum class EInteractionType : uint8

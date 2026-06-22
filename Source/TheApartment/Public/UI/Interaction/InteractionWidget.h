@@ -16,10 +16,9 @@ class THEAPARTMENT_API UInteractionWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-
-	UInteractionWidget(const FObjectInitializer& ObjectInitializer);
-
+	
 	void DisplayNewInteraction(const FInteractionVisualInfo& InteractionVisualInfo);
+	void SwitchInteractionVisibility(const bool bVisible);
 	
 protected:
 
@@ -34,6 +33,5 @@ protected:
 
 private:
 
-	void SwitchInteractionVisibility(const bool bVisible);
 	void ClearInteractionDisplay();
 };
