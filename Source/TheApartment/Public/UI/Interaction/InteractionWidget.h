@@ -17,7 +17,7 @@ class THEAPARTMENT_API UInteractionWidget : public UUserWidget
 
 public:
 	
-	void DisplayNewInteraction(const FInteractionVisualInfo& InteractionVisualInfo);
+	void DisplayNewInteraction(const FInteractionInfo& InInteractionInfo);
 	void SwitchInteractionVisibility(const bool bVisible);
 	
 protected:
@@ -34,4 +34,5 @@ protected:
 private:
 
 	void ClearInteractionDisplay();
+	static FName ConvertInteractionEnumToName(const EInteractionType InteractionType);
 };

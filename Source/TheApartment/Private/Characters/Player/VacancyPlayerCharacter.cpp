@@ -7,8 +7,12 @@
 #include "Components/Audio/Listener/VacancyAudioListenerComponent.h"
 #include "Components/Characters/Player/Evidence/EvidenceInventoryComponent.h"
 #include "Components/Characters/Player/Interaction/PlayerInteractionComponent.h"
+#include "Components/Characters/Player/ProgressionComponents/Flashlight/PlayerFlashlightComponent.h"
+#include "Components/Characters/Player/ProgressionComponents/Phone/PlayerPhoneComponent.h"
+#include "Components/Characters/Player/ProgressionComponents/Recorder/PlayerRecorderComponent.h"
 #include "Components/Characters/Player/Suspicion/SuspicionReceiverComponent.h"
 #include "Components/Characters/Player/Tools/PlayerToolComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
 
@@ -18,7 +22,7 @@ AVacancyPlayerCharacter::AVacancyPlayerCharacter()
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
-	SpringArm->TargetArmLength = 300.f;
+	SpringArm->TargetArmLength = 0.f; //start in first person.
 	SpringArm->bUsePawnControlRotation = false;
 
 	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
@@ -29,6 +33,11 @@ AVacancyPlayerCharacter::AVacancyPlayerCharacter()
 	EvidenceInventoryComponent = CreateDefaultSubobject<UEvidenceInventoryComponent>(TEXT("EvidenceInventoryComponent"));
 	SuspicionReceiverComponent = CreateDefaultSubobject<USuspicionReceiverComponent>(TEXT("SuspicionReceiverComponent"));
 	PlayerToolComponent = CreateDefaultSubobject<UPlayerToolComponent>(TEXT("PlayerToolComponent"));
+	PlayerFlashlightComponent = CreateDefaultSubobject<UPlayerFlashlightComponent>(TEXT("PlayerFlashlightComponent"));
+	PlayerPhoneComponent = CreateDefaultSubobject<UPlayerPhoneComponent>(TEXT("PlayerPhoneComponent"));
+	PlayerRecorderComponent = CreateDefaultSubobject<UPlayerRecorderComponent>(TEXT("PlayerRecorderComponent"));
+
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 }
 
 void AVacancyPlayerCharacter::BeginPlay()

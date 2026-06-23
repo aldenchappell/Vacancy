@@ -4,33 +4,47 @@
 #include "Components/Characters/Player/Tools/PlayerToolComponent.h"
 
 
-// Sets default values for this component's properties
 UPlayerToolComponent::UPlayerToolComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
 }
 
-
-// Called when the game starts
 void UPlayerToolComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
-	
 }
 
-
-// Called every frame
-void UPlayerToolComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-                                         FActorComponentTickFunction* ThisTickFunction)
+void UPlayerToolComponent::EquipTool(const FPlayerToolAttachmentStateInfo& ToolAttachmentStateInfo)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	if (!ToolAttachmentStateInfo.AttachedTool)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EquipTool called with null AttachedTool."));
+		return;
+	}
 
-	// ...
+	OnToolEquipped.Broadcast(ToolAttachmentStateInfo);
 }
 
+void UPlayerToolComponent::UnequipCurrentTool()
+{
+	if (!CurrentToolAttachmentState.AttachedTool)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UnequipCurrentTool called but no tool is currently equipped."));
+		return;
+	}
+
+	CurrentToolAttachmentState.AttachedTool->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	CurrentToolAttachmentState.AttachedTool = nullptr;
+	CurrentToolAttachmentState.bIsAttached = false;
+}
+
+bool UPlayerToolComponent::IsToolEquipped() const
+{
+	return GetEquippedTool() != nullptr && CurrentToolAttachmentState.bIsAttached;
+}
+
+AActor* UPlayerToolComponent::GetEquippedTool() const
+{
+	return CurrentToolAttachmentState.AttachedTool ? CurrentToolAttachmentState.AttachedTool : nullptr;
+}

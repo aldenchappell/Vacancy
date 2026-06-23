@@ -45,6 +45,15 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UPlayerToolComponent* PlayerToolComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UPlayerFlashlightComponent* PlayerFlashlightComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UPlayerPhoneComponent* PlayerPhoneComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UPlayerRecorderComponent* PlayerRecorderComponent;
 	
 #pragma endregion
 public:

@@ -3,8 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InteractableInterface.h"
 #include "InteractionData.h"
 #include "Components/ActorComponent.h"
+#include "Systems/Interaction/Interactions/VacancyInteractionBase.h"
 #include "PlayerInteractionComponent.generated.h"
 
 class AVacancyPlayerCharacter;
@@ -24,6 +26,18 @@ struct FInteractionScanInfo
 	TEnumAsByte<ECollisionChannel> TraceChannel = ECC_Visibility;
 };
 
+USTRUCT(BlueprintType)
+struct FDefaultInteraction
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TArray<FInteractionInfo> DefaultInteractionInfos;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TArray<TSubclassOf<UVacancyInteractionBase>> DefaultInteractions;
+};
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class THEAPARTMENT_API UPlayerInteractionComponent : public UActorComponent
 {
@@ -33,7 +47,13 @@ public:
 	UPlayerInteractionComponent();
 
 	UFUNCTION()
-	bool TryInteractWith(AActor* InInteractableActor);
+	bool TryInteractWithActiveInteractable() const;
+
+	//Default Interaction Management
+	bool TryUseInteraction(const FInteractionInfo& InteractionInfo) const;
+	
+	void EnterHide() const;
+	void ExitHide() const;
 	
 protected:
 	virtual void BeginPlay() override;
@@ -46,15 +66,19 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category="Interaction")
 	FInteractionScanInfo InteractionScanInfo;
+
+	UPROPERTY(EditInstanceOnly, Category="Interaction")
+	TArray<FDefaultInteraction> DefaultInteractions;
 	
 private:
 
 	void ScanForInteractables();
 	TObjectPtr<AActor> LastActiveInteractable = nullptr;
-
+	TObjectPtr<AVacancyPlayerCharacter> PlayerCharacter = nullptr;
 	float TimeSinceLastScan = 0.f;
 
+	void InitializeDefaultInteractions(const TArray<FName>& IgnoredInteractionIdentifiers = TArray<FName>());
+	
+	//Helpers
 	static AActor* ActorToInteractable(AActor* InActor);
-
-	TObjectPtr<AVacancyPlayerCharacter> PlayerCharacter = nullptr;
 };

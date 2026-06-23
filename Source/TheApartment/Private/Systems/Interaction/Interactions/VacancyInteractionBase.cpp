@@ -16,8 +16,8 @@ static TAutoConsoleVariable<bool> CVarEnableInteractionLogging(
 
 void UVacancyInteractionBase::InitializeInteraction(const FInteractionInfo& InteractInfo)
 {
-	InteractionInfo = InteractInfo;
-	SetInteractionOwner(InteractInfo.InteractableActor);
+	InteractionData = InteractInfo;
+	SetInteractionOwner(InteractInfo.InteractionBasicInfo.InteractableActor);
 }
 
 void UVacancyInteractionBase::Interact_Implementation(AVacancyPlayerCharacter* InteractingCharacter)
@@ -42,7 +42,7 @@ void UVacancyInteractionBase::Interact_Implementation(AVacancyPlayerCharacter* I
 bool UVacancyInteractionBase::CanInteract_Implementation(AVacancyPlayerCharacter* InteractingCharacter) const
 {
 	const FGameplayTagContainer PlayerTags = InteractingCharacter->GetActivePlayerTags();
-	if (const bool bHasRequiredTags = PlayerTags.HasAll(InteractionValidationData.RequiredInteractionTags); !bHasRequiredTags)
+	if (const bool bHasRequiredTags = PlayerTags.HasAll(InteractionData.InteractionValidationData.RequiredInteractionTags); !bHasRequiredTags)
 	{
 		UE_LOG(LogTemp, Log, TEXT("%s does not have the required tags to interact with %s"), *InteractingCharacter->GetName(), *GetName());
 		return false; // If the player does not have the required tags, do nothing.

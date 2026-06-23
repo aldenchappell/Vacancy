@@ -6,22 +6,47 @@
 #include "Components/ActorComponent.h"
 #include "PlayerToolComponent.generated.h"
 
+USTRUCT(BlueprintType)
+struct FPlayerToolAttachmentStateInfo
+{
+	GENERATED_BODY()
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tool Attachment")
+	AActor* AttachedTool = nullptr;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tool Attachment")
+	bool bIsAttached = false;
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnToolEquipped, const FPlayerToolAttachmentStateInfo&, ToolAttachmentStateInfo);
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class THEAPARTMENT_API UPlayerToolComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this component's properties
+	
 	UPlayerToolComponent();
 
+	UFUNCTION()
+	void EquipTool(const FPlayerToolAttachmentStateInfo& ToolAttachmentStateInfo);
+	UFUNCTION()
+	void UnequipCurrentTool();
+	
+	UPROPERTY(BlueprintAssignable, Category="Tool Attachment")
+	FOnToolEquipped OnToolEquipped;
+	
 protected:
-	// Called when the game starts
+	
 	virtual void BeginPlay() override;
 
+private:
+	
+	UPROPERTY(VisibleAnywhere, Category="Tool Attachment")
+	FPlayerToolAttachmentStateInfo CurrentToolAttachmentState;
+
 public:
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
-	                           FActorComponentTickFunction* ThisTickFunction) override;
+	
+	bool IsToolEquipped() const;
+	AActor* GetEquippedTool() const;
 };

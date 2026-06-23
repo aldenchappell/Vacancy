@@ -42,3 +42,62 @@ FTransform UInteractableUtils::GetInteractionTransformFromActor(const AActor* In
 	
 	return FTransform::Identity;
 }
+
+UVacancyInteractionBase* UInteractableUtils::GetInteractionFromIdentifier(const AActor* InActor,
+	const FName& InteractionIdentifier)
+{
+	if (!IsValid(InActor))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetInteractionFromIdentifier called with null InActor."));
+		return nullptr;
+	}
+
+	if (InteractionIdentifier.IsNone())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetInteractionFromIdentifier called with empty InteractionIdentifier."));
+		return nullptr;
+	}
+
+	if (!InActor->GetClass()->ImplementsInterface(UInteractableInterface::StaticClass()))
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("GetInteractionFromIdentifier called with an actor that does not implement the InteractableInterface: %s"),
+			*InActor->GetName());
+		return nullptr;
+	}
+
+	const UVacancyInteractionBase* OwnedInteraction = IInteractableInterface::Execute_GetInteraction(InActor);
+	if (!IsValid(OwnedInteraction))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetInteractionFromIdentifier: %s implements InteractableInterface but returned null interaction."),
+			*InActor->GetName());
+		return nullptr;
+	}
+
+	if (OwnedInteraction->GetInteractionInfo().InteractionBasicInfo.InteractionIdentifier != InteractionIdentifier)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetInteractionFromIdentifier: Interaction identifier mismatch. Expected: %s, Found: %s"),
+			*InteractionIdentifier.ToString(), *OwnedInteraction->GetInteractionInfo().InteractionBasicInfo.InteractionIdentifier.ToString());
+		return nullptr;
+	}
+
+	return const_cast<UVacancyInteractionBase*>(OwnedInteraction);
+}
+
+AActor* UInteractableUtils::GetInteractableActorFromInteraction(const UVacancyInteractionBase* Interaction)
+{
+	if (!IsValid(Interaction))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetInteractableActorFromInteraction called with null Interaction."));
+		return nullptr;
+	}
+
+	const AActor* InteractableActor = Interaction->GetInteractionInfo().InteractionBasicInfo.InteractableActor;
+	if (!IsValid(InteractableActor))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetInteractableActorFromInteraction: Interaction has null InteractableActor."));
+		return nullptr;
+	}
+
+	return const_cast<AActor*>(InteractableActor);
+}

@@ -7,6 +7,8 @@
 #include "GameFramework/Actor.h"
 #include "VacancyInteractableBase.generated.h"
 
+class UBoxComponent;
+
 UCLASS()
 class THEAPARTMENT_API AVacancyInteractableBase : public AActor, public IInteractableInterface
 {
@@ -30,8 +32,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interaction")
 	USceneComponent* InteractionTransformComponent;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Interaction", meta=(AllowPrivateAccess="true"))
+	TObjectPtr<UBoxComponent> InteractionCollision;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interaction")
 	TSubclassOf<UVacancyInteractionBase> InteractionClass;
+
+	
 
 private:
 

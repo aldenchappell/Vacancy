@@ -11,6 +11,7 @@ enum class EInteractionType : uint8
 	Inspect UMETA(DisplayName="Inspect"),
 	Use UMETA(DisplayName="Use"),
 	Open UMETA(DisplayName="Open"),
+	Close UMETA(DisplayName="Close"),
 	Hide UMETA(DisplayName="Hide"),
 	Record UMETA(DisplayName="Record"),
 	Photograph UMETA(DisplayName="Photograph"),
@@ -18,17 +19,20 @@ enum class EInteractionType : uint8
 };
 
 USTRUCT(BlueprintType)
-struct FInteractionInfo
+struct FInteractionBasicInfo
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FName InteractionIdentifier = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EInteractionType InteractionType = EInteractionType::None;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	AActor* InteractionInstigator = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	AActor* InteractableActor = nullptr;
 };
 
@@ -37,8 +41,8 @@ struct FInteractionVisualInfo
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FText InteractionText = FText::FromString("Interact");
+	// UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	// FText InteractionText = FText::FromString("Interact");
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UTexture2D* InteractionIcon = nullptr;
@@ -57,4 +61,19 @@ struct FInteractionValidationData
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FText FailureReason = FText::FromString("Invalid Interaction");
+};
+
+USTRUCT(BlueprintType)
+struct FInteractionInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FInteractionBasicInfo InteractionBasicInfo;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FInteractionVisualInfo InteractionVisualInfo;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FInteractionValidationData InteractionValidationData;
 };

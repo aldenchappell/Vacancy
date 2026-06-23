@@ -36,6 +36,9 @@ public:
 	void EndInteraction(AVacancyPlayerCharacter* InteractingCharacter);
 
 	UFUNCTION(BlueprintNativeEvent, Category="Interaction")
+	FInteractionInfo GetInteractionInfo() const;
+	
+	UFUNCTION(BlueprintNativeEvent, Category="Interaction")
 	FInteractionVisualInfo GetInteractionVisualInfo() const;
 
 	UFUNCTION(BlueprintNativeEvent, Category="Interaction")

@@ -4,33 +4,19 @@
 #include "Components/Characters/Player/Evidence/EvidenceInventoryComponent.h"
 
 
-// Sets default values for this component's properties
 UEvidenceInventoryComponent::UEvidenceInventoryComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
 }
 
-
-// Called when the game starts
 void UEvidenceInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// ...
 	
 }
 
-
-// Called every frame
-void UEvidenceInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-                                                FActorComponentTickFunction* ThisTickFunction)
+bool UEvidenceInventoryComponent::TryToggleInventory(const bool bOpenInventory)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
+	return false;
 }
 

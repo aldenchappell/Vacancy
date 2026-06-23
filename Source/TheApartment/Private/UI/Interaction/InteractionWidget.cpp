@@ -6,6 +6,7 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Components/WidgetComponent.h"
+#include "Components/Characters/Player/Interaction/InteractableInterface.h"
 
 void UInteractionWidget::NativeConstruct()
 {
@@ -32,21 +33,37 @@ void UInteractionWidget::ClearInteractionDisplay()
 	InteractionText->SetText(FText::GetEmpty());
 }
 
-void UInteractionWidget::DisplayNewInteraction(const FInteractionVisualInfo& InteractionVisualInfo)
+FName UInteractionWidget::ConvertInteractionEnumToName(const EInteractionType InteractionType)
+{
+	if (InteractionType == EInteractionType::None)
+	{
+		return "Interact";
+	}
+	
+	return FName(*UEnum::GetValueAsString(InteractionType));
+}
+
+void UInteractionWidget::DisplayNewInteraction(const FInteractionInfo& InInteractionInfo)
 {
 	ClearInteractionDisplay();
 	SwitchInteractionVisibility(true);
 
-	if (InteractionVisualInfo.InteractionText.IsEmpty())
+	if (InInteractionInfo.InteractionVisualInfo.InteractionIcon == nullptr)
 	{
-		return; // No text to display, so exit early
-	}
-
-	if (InteractionVisualInfo.InteractionIcon == nullptr)
-	{
+		UE_LOG(LogTemp, Warning, TEXT("DisplayNewInteraction called with null InteractionIcon in InteractionInfo."));
 		return; // No icon to display, so exit early
 	}
+	
+	const AActor* Interactable = InInteractionInfo.InteractionBasicInfo.InteractableActor;
+	if (!IsValid(Interactable))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DisplayNewInteraction called with null InteractableActor in InteractionInfo."));
+		return; // If the interactable actor is null, exit early
+	}
 
-	InteractionIcon->SetBrushFromTexture(InteractionVisualInfo.InteractionIcon);
-	InteractionText->SetText(InteractionVisualInfo.InteractionText);
+	const FInteractionInfo InteractionInfo = IInteractableInterface::Execute_GetInteractionInfo(Interactable);
+	
+	const FName InteractionName = ConvertInteractionEnumToName(InteractionInfo.InteractionBasicInfo.InteractionType);
+	InteractionText->SetText(FText::FromName(InteractionName));
+	InteractionIcon->SetBrushFromTexture(InInteractionInfo.InteractionVisualInfo.InteractionIcon);
 }

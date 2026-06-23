@@ -4,12 +4,22 @@
 #include "Systems/Interaction/Interactables/VacancyInteractableBase.h"
 
 #include "Characters/Player/VacancyPlayerCharacter.h"
+#include "Components/BoxComponent.h"
 #include "Systems/Interaction/InteractableUtils.h"
 #include "Systems/Interaction/Interactions/VacancyInteractionBase.h"
 
 
 AVacancyInteractableBase::AVacancyInteractableBase()
 {
+	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+
+	InteractionCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionCollision"));
+	InteractionCollision->SetupAttachment(RootComponent);
+	InteractionCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	InteractionCollision->SetCollisionObjectType(ECC_WorldDynamic);
+	InteractionCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	InteractionCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+
 	InteractionTransformComponent = CreateDefaultSubobject<USceneComponent>(TEXT("InteractionTransformComponent"));
 	InteractionTransformComponent->SetupAttachment(RootComponent);
 }
@@ -18,8 +28,39 @@ void AVacancyInteractableBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	
+	TSubclassOf<UVacancyInteractionBase> InteractionClassToUse = nullptr;
+	if (IsValid(InteractionClass))
+	{
+		InteractionClassToUse = InteractionClass;
+	}
+	else
+	{
+		InteractionClassToUse = UVacancyInteractionBase::StaticClass();
+		UE_LOG(LogTemp, Warning, TEXT("%s has no InteractionClass set. Using default interaction class."), *GetName());
+	}
+
+	InteractionPtr = NewObject<UVacancyInteractionBase>(this, InteractionClassToUse);
+
+	if (!IsValid(InteractionPtr))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s failed to create InteractionPtr."), *GetName());
+		return;
+	}
+
+	FInteractionInfo InteractionInfo = InteractionPtr->GetInteractionInfo();
+	InteractionInfo.InteractionBasicInfo.InteractableActor = this;
+
+	InteractionPtr->InitializeInteraction(InteractionInfo);
+
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("%s created interaction instance: %s"),
+		*GetName(),
+		*GetNameSafe(InteractionPtr)
+	);
 }
+
 
 void AVacancyInteractableBase::Interact_Implementation(AVacancyPlayerCharacter* InteractingCharacter)
 {
@@ -52,17 +93,7 @@ void AVacancyInteractableBase::EndInteraction_Implementation(AVacancyPlayerChara
 
 UVacancyInteractionBase* AVacancyInteractableBase::GetInteraction_Implementation() const
 {
-	if (InteractionPtr)
-	{
-		return InteractionPtr;
-	}
-
-	UVacancyInteractionBase* NewInteraction = nullptr;
-	AActor* ThisActor = const_cast<AVacancyInteractableBase*>(this); // Cast away constness to allow interaction construction
-	UInteractableUtils::ConstructInteractionFromActor(ThisActor, NewInteraction);
-
-	UE_LOG(LogTemp, Warning, TEXT("InteractionPtr is not set for %s. Constructing new interaction and returning it."), *GetName());
-	return nullptr;
+	return InteractionPtr;
 }
 
 TSubclassOf<UVacancyInteractionBase> AVacancyInteractableBase::GetInteractionClass_Implementation() const
@@ -78,7 +109,7 @@ TSubclassOf<UVacancyInteractionBase> AVacancyInteractableBase::GetInteractionCla
 
 FInteractionVisualInfo AVacancyInteractableBase::GetInteractionVisualInfo_Implementation() const
 {
-	if (const UVacancyInteractionBase* InteractionInstance = GetInteraction())
+	if (const UVacancyInteractionBase* InteractionInstance = Execute_GetInteraction(this))
 	{
 		return InteractionInstance->GetVisualInfo();
 	}

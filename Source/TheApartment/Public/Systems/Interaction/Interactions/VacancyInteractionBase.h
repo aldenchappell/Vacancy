@@ -10,7 +10,7 @@
 class AVacancyPlayerCharacter;
 
 
-UCLASS()
+UCLASS(Blueprintable)
 class THEAPARTMENT_API UVacancyInteractionBase : public UObject
 {
 	GENERATED_BODY()
@@ -25,22 +25,13 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category="Interaction")
 	void Interact(AVacancyPlayerCharacter* InteractingCharacter);
 
-	FInteractionInfo GetInteractionInfo() const { return InteractionInfo; }
-	FInteractionVisualInfo GetVisualInfo() const { return InteractionVisualInfo; }
-	FInteractionValidationData GetValidationData() const { return InteractionValidationData; }
+	FInteractionInfo GetInteractionInfo() const { return InteractionData; }
+	FInteractionVisualInfo GetVisualInfo() const { return InteractionData.InteractionVisualInfo; }
+	FInteractionValidationData GetValidationData() const { return InteractionData.InteractionValidationData; }
 protected:
 
 	UPROPERTY(EditAnywhere, Category="Interaction")
-	FInteractionInfo InteractionInfo;
-
-	UPROPERTY(EditAnywhere, Category="Interaction")
-	FInteractionVisualInfo InteractionVisualInfo;
-
-	UPROPERTY(EditAnywhere, Category="Interaction")
-	FInteractionValidationData InteractionValidationData;
-	
-	UPROPERTY(EditAnywhere, Category="Interaction")
-	EInteractionType InteractionType = EInteractionType::Use;
+	FInteractionInfo InteractionData;
 
 	void OnInteractionSuccessful(const AVacancyPlayerCharacter* InteractingCharacter) const;
 	void OnInteractionFailed(const AVacancyPlayerCharacter* InteractingCharacter, const FString& FailureReason) const;
