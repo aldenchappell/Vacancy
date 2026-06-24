@@ -6,16 +6,14 @@
 #include "Characters/Player/VacancyPlayerCharacter.h"
 #include "Characters/Player/VacancyPlayerController.h"
 #include "Components/Characters/Player/Interaction/InteractableInterface.h"
-#include "GameFramework/Character.h"
 #include "Systems/Interaction/Interactions/VacancyInteractionBase.h"
 #include "UI/VacancyHUD.h"
 #include "UI/Interaction/InteractionWidget.h"
-//
 #include "DrawDebugHelpers.h"
+#include "Components/WidgetComponent.h"
 #include "Engine/World.h"
-//
 
-static TAutoConsoleVariable<bool> CVarEnableInteractionLogging(
+static TAutoConsoleVariable<bool> CVarEnableInteractableLogging(
 	TEXT("Vacancy.Interaction.EnableLogging"),
 	false,
 	TEXT("Enable logging for player interaction component."),
@@ -61,9 +59,7 @@ bool UPlayerInteractionComponent::TryUseInteraction(const FInteractionInfo& Inte
 		return false; // If the interactable actor is null, exit early
 	}
 
-	if (const UInteractableInterface* Interactable =
-		Cast<UInteractableInterface>(InteractionInfo.InteractionBasicInfo.InteractableActor);
-		!Interactable)
+	if (!InteractionInfo.InteractionBasicInfo.InteractableActor->GetClass()->ImplementsInterface(UInteractableInterface::StaticClass()))
 	{
 		UE_LOG(LogTemp, Warning,
 			TEXT("TryUseInteraction called with an actor that does not implement the InteractableInterface: %s"),
@@ -94,6 +90,8 @@ void UPlayerInteractionComponent::BeginPlay()
 		TEXT("PlayerInteractionComponent initialized on %s"),
 		*GetNameSafe(PlayerCharacter)
 	);
+
+	CreateInteractionWidgetComp();
 }
 
 void UPlayerInteractionComponent::TickComponent(const float DeltaTime, const ELevelTick TickType,
@@ -101,6 +99,11 @@ void UPlayerInteractionComponent::TickComponent(const float DeltaTime, const ELe
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	if (!CanExecuteInteractions())
+	{
+		return;
+	}
+	
 	if (TimeSinceLastScan >= InteractionScanInfo.TimeBetweenScans)
 	{
 		ScanForInteractables();
@@ -117,7 +120,8 @@ void UPlayerInteractionComponent::StartInteraction(const FInteractionInfo& Inter
 	if (!InteractionInfo.InteractionBasicInfo.InteractableActor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("StartInteraction called with null InteractableActor in InteractionInfo."));
-		return; // If the interactable actor is null, exit early
+		// If the interactable actor is null, exit early
+		return; 
 	}
 
 	if (!InteractionInfo.InteractionBasicInfo.InteractableActor->GetClass()->ImplementsInterface(UInteractableInterface::StaticClass()))
@@ -125,7 +129,8 @@ void UPlayerInteractionComponent::StartInteraction(const FInteractionInfo& Inter
 		UE_LOG(LogTemp, Warning,
 			TEXT("StartInteraction called with an actor that does not implement the InteractableInterface: %s"),
 			*InteractionInfo.InteractionBasicInfo.InteractableActor->GetName());
-		return; // If the interactable actor does not implement the interface, exit early
+		// If the interactable actor does not implement the interface, exit early
+		return; 
 	}
 
 	// Call the StartInteraction function on the interactable actor
@@ -137,7 +142,7 @@ void UPlayerInteractionComponent::StartInteraction(const FInteractionInfo& Inter
 		if (const AVacancyHUD* VacancyHUD = PlayerController->GetVacancyHUD())
 		{
 			
-			if (UInteractionWidget* InteractionWidget = VacancyHUD->GetInteractionWidget())
+			if (InteractionWidgetInstance)
 			{
 				const AActor* InteractableActor = InteractionInfo.InteractionBasicInfo.InteractableActor;
 				if (!InteractableActor)
@@ -148,7 +153,9 @@ void UPlayerInteractionComponent::StartInteraction(const FInteractionInfo& Inter
 				const FInteractionInfo InteractableInteractionInfo =
 					IInteractableInterface::Execute_GetInteractionInfo(InteractableActor);
 				{
-					InteractionWidget->DisplayNewInteraction(InteractionInfo); // Update the interaction widget with the visual info from the interactable actor
+					UpdateInteractionWidgetLoc(InteractableActor);
+					// Update the interaction widget with the visual info from the interactable actor
+					InteractionWidgetInstance->DisplayNewInteraction(InteractionInfo); 
 				}
 			}
 		}
@@ -172,7 +179,31 @@ void UPlayerInteractionComponent::EndInteraction(const FInteractionInfo& Interac
 	}
 
 	// Call the EndInteraction function on the interactable actor
-	IInteractableInterface::Execute_EndInteraction(InteractionInfo.InteractionBasicInfo.InteractableActor, PlayerCharacter); 
+	IInteractableInterface::Execute_EndInteraction(InteractionInfo.InteractionBasicInfo.InteractableActor, PlayerCharacter);
+
+	if (const AVacancyPlayerController* PlayerController = Cast<AVacancyPlayerController>(PlayerCharacter->GetController()))
+	{
+		if (const AVacancyHUD* VacancyHUD = PlayerController->GetVacancyHUD())
+		{
+			
+			if (InteractionWidgetInstance)
+			{
+				const AActor* InteractableActor = InteractionInfo.InteractionBasicInfo.InteractableActor;
+				if (!InteractableActor)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("StartInteraction: InteractableActor is null in InteractionInfo."));
+					return; // If the interactable actor is null, exit early
+				}
+				const FInteractionInfo InteractableInteractionInfo =
+					IInteractableInterface::Execute_GetInteractionInfo(InteractableActor);
+				{
+					
+					//Clear interaction display on the widget
+					InteractionWidgetInstance->ClearInteractionDisplay();
+				}
+			}
+		}
+	}
 }
 
 void UPlayerInteractionComponent::ScanForInteractables()
@@ -296,7 +327,7 @@ void UPlayerInteractionComponent::ScanForInteractables()
 		if (ValidationData.MaxInteractionDistance > 0.f &&
 			DistanceToInteractable > ValidationData.MaxInteractionDistance)
 		{
-			if (CVarEnableInteractionLogging.GetValueOnGameThread())
+			if (CVarEnableInteractableLogging.GetValueOnGameThread())
 			{
 				UE_LOG(
 					LogTemp,
@@ -313,7 +344,7 @@ void UPlayerInteractionComponent::ScanForInteractables()
 
 		if (!Interaction->CanInteract(PlayerCharacterPtr))
 		{
-			if (CVarEnableInteractionLogging.GetValueOnGameThread())
+			if (CVarEnableInteractableLogging.GetValueOnGameThread())
 			{
 				UE_LOG(
 					LogTemp,
@@ -352,7 +383,7 @@ void UPlayerInteractionComponent::ScanForInteractables()
 	{
 		StartInteraction(NewInteractionInfo);
 
-		if (CVarEnableInteractionLogging.GetValueOnGameThread())
+		if (CVarEnableInteractableLogging.GetValueOnGameThread())
 		{
 			UE_LOG(
 				LogTemp,
@@ -361,6 +392,18 @@ void UPlayerInteractionComponent::ScanForInteractables()
 				*GetNameSafe(NewActiveInteractable)
 			);
 		}
+	}
+	else
+	{
+		if (CVarEnableInteractableLogging.GetValueOnGameThread())
+		{
+			UE_LOG(
+				LogTemp,
+				Log,
+				TEXT("PlayerInteractionComponent: No active interactable found.")
+			);
+		}
+		EndInteraction(NewInteractionInfo);
 	}
 }
 
@@ -376,9 +419,13 @@ void UPlayerInteractionComponent::InitializeDefaultInteractions(const TArray<FNa
 	{
 		for (const FInteractionInfo& InteractionInfo : DefaultInteraction.DefaultInteractionInfos)
 		{
-			if (IgnoredInteractionIdentifiers.Contains(InteractionInfo.InteractionBasicInfo.InteractionIdentifier))
+			const FGameplayTag InteractionIdentifier = InteractionInfo.InteractionVisualInfo.InteractionTag;
+			if (const FName InteractionName = InteractionIdentifier.IsValid() ?
+				InteractionIdentifier.GetTagName() : FName("InvalidInteraction");
+				IgnoredInteractionIdentifiers.Contains(InteractionName))
 			{
-				continue; // Skip this interaction if it's in the ignored list
+				// Skip this interaction if it's in the ignored list
+				continue; 
 			}
 
 			if (!TryUseInteraction(InteractionInfo))
@@ -392,7 +439,7 @@ void UPlayerInteractionComponent::InitializeDefaultInteractions(const TArray<FNa
 			}
 			else
 			{
-				if (CVarEnableInteractionLogging.GetValueOnGameThread())
+				if (CVarEnableInteractableLogging.GetValueOnGameThread())
 				{
 					UE_LOG(
 						LogTemp,
@@ -421,12 +468,149 @@ AActor* UPlayerInteractionComponent::ActorToInteractable(AActor* InActor)
 	return nullptr;
 }
 
+void UPlayerInteractionComponent::CreateInteractionWidgetComp()
+{
+	if (!IsValid(InteractionWidgetClass))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: InteractionWidgetClass is not set."));
+		return;
+	}
+
+	if (!IsValid(PlayerCharacter))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: PlayerCharacter is not valid."));
+		return;
+	}
+
+	if (UWidgetComponent* InteractionWidgetComponent = NewObject<UWidgetComponent>(PlayerCharacter))
+	{
+		InteractionWidgetCompInstance = InteractionWidgetComponent;
+		PlayerCharacter->AddInstanceComponent(InteractionWidgetComponent);
+		InteractionWidgetComponent->RegisterComponent();
+
+		InteractionWidgetInstance = CreateWidget<UInteractionWidget>(GetWorld(), InteractionWidgetClass);
+		if (!InteractionWidgetInstance)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: Failed to create InteractionWidgetInstance."));
+			return;
+		}
+
+		InteractionWidgetComponent->SetWidget(InteractionWidgetInstance);
+		InteractionWidgetComponent->SetWidgetSpace(EWidgetSpace::Screen);
+		InteractionWidgetComponent->SetDrawSize(FVector2D(250.f, 50.f));
+	}
+}
+
+void UPlayerInteractionComponent::ToggleInteractionWidgetCompVis(const bool bVisible) const
+{
+	if (!InteractionWidgetInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: InteractionWidgetInstance is null."));
+		return;
+	}
+
+	InteractionWidgetInstance->SwitchInteractionVisibility(bVisible);
+}
+
+void UPlayerInteractionComponent::UpdateInteractionWidgetLoc(const AActor* InteractableActor) const
+{
+	if (!IsValid(InteractableActor))
+	{
+		//if we don't have a valid interactable actor, hide the interaction display and clear its location out
+		InteractionWidgetCompInstance->SetWorldLocation(FVector::ZeroVector);
+		InteractionWidgetInstance->ClearInteractionDisplay();
+		UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: InteractableActor is not valid."));
+		return;
+	}
+
+	if (!IsValid(InteractionWidgetInstance))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: InteractionWidgetInstance is not valid."));
+		return;
+	}
+
+	if (!IsValid(InteractionWidgetCompInstance))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: InteractionWidgetCompInstance is not valid."));
+		return;
+	}
+
+	const FVector InteractionPos =
+		IInteractableInterface::Execute_GetInteractionTransformComponent(InteractableActor)->GetComponentLocation();
+
+	InteractionWidgetCompInstance->SetWorldLocation(InteractionPos);
+}
+
 void UPlayerInteractionComponent::EnterHide() const
 {
-	
+	// Use the GetInteractionFromIdentifier utility function to find the interaction with the "EnterHide" identifier
 }
 
 void UPlayerInteractionComponent::ExitHide() const
 {
-	
-} 
+	// Use the GetInteractionFromIdentifier utility function to find the interaction with the "ExitHide" identifier
+}
+
+bool UPlayerInteractionComponent::CanExecuteInteractions() const
+{
+	if (!PlayerCharacter)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: PlayerCharacter is not valid."));
+		return false;
+	}
+
+	return !ActiveInteractionTags.HasAny(InteractionBlockingTags);
+}
+
+void UPlayerInteractionComponent::ApplyActiveInteractionTags(const FGameplayTagContainer& TagsToApply)
+{
+	if (TagsToApply.IsEmpty())
+	{
+		return;
+	}
+
+	for (const FGameplayTag& Tag : TagsToApply)
+	{
+		if (!Tag.IsValid())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: Invalid tag in TagsToApply."));
+			return;
+		}
+
+		if (ActiveInteractionTags.HasTag(Tag))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: Tag %s is already active."), *Tag.ToString());
+			return;
+		}
+	}
+
+	ActiveInteractionTags.AppendTags(TagsToApply);
+}
+
+void UPlayerInteractionComponent::RemoveActiveInteractionTags(const FGameplayTagContainer& TagsToRemove)
+{
+	if (TagsToRemove.IsEmpty())
+	{
+		return;
+	}
+
+	for (const FGameplayTag& Tag : TagsToRemove)
+	{
+		if (!Tag.IsValid())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: Invalid tag in TagsToRemove."));
+			return;
+		}
+
+		if (!ActiveInteractionTags.HasTag(Tag))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PlayerInteractionComponent: Tag %s is not active."), *Tag.ToString());
+			return;
+		}
+	}
+
+	for (const FGameplayTag& Tag : TagsToRemove)
+	{
+		ActiveInteractionTags.RemoveTag(Tag);
+	}
+}

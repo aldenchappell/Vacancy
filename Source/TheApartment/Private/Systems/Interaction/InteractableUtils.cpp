@@ -44,7 +44,7 @@ FTransform UInteractableUtils::GetInteractionTransformFromActor(const AActor* In
 }
 
 UVacancyInteractionBase* UInteractableUtils::GetInteractionFromIdentifier(const AActor* InActor,
-	const FName& InteractionIdentifier)
+	const FGameplayTag& InteractionIdentifier)
 {
 	if (!IsValid(InActor))
 	{
@@ -52,7 +52,7 @@ UVacancyInteractionBase* UInteractableUtils::GetInteractionFromIdentifier(const 
 		return nullptr;
 	}
 
-	if (InteractionIdentifier.IsNone())
+	if (InteractionIdentifier.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GetInteractionFromIdentifier called with empty InteractionIdentifier."));
 		return nullptr;
@@ -74,10 +74,10 @@ UVacancyInteractionBase* UInteractableUtils::GetInteractionFromIdentifier(const 
 		return nullptr;
 	}
 
-	if (OwnedInteraction->GetInteractionInfo().InteractionBasicInfo.InteractionIdentifier != InteractionIdentifier)
+	if (OwnedInteraction->GetInteractionInfo().InteractionVisualInfo.InteractionTag != InteractionIdentifier)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GetInteractionFromIdentifier: Interaction identifier mismatch. Expected: %s, Found: %s"),
-			*InteractionIdentifier.ToString(), *OwnedInteraction->GetInteractionInfo().InteractionBasicInfo.InteractionIdentifier.ToString());
+			*InteractionIdentifier.ToString(), *OwnedInteraction->GetInteractionInfo().InteractionVisualInfo.InteractionTag.ToString());
 		return nullptr;
 	}
 
