@@ -9,6 +9,8 @@
 #include "Systems/Interaction/Interactions/VacancyInteractionBase.h"
 #include "PlayerInteractionComponent.generated.h"
 
+class UWidgetComponent;
+class UInteractionWidget;
 class AVacancyPlayerCharacter;
 
 USTRUCT(BlueprintType)
@@ -54,6 +56,11 @@ public:
 	
 	void EnterHide() const;
 	void ExitHide() const;
+
+	bool CanExecuteInteractions() const;
+
+	void ApplyActiveInteractionTags(const FGameplayTagContainer& TagsToApply);
+	void RemoveActiveInteractionTags(const FGameplayTagContainer& TagsToRemove);
 	
 protected:
 	virtual void BeginPlay() override;
@@ -65,12 +72,22 @@ protected:
 	void EndInteraction(const FInteractionInfo& InteractionInfo) const;
 
 	UPROPERTY(EditAnywhere, Category="Interaction")
+	TSubclassOf<UInteractionWidget> InteractionWidgetClass;
+	
+	UPROPERTY(EditAnywhere, Category="Interaction")
 	FInteractionScanInfo InteractionScanInfo;
 
 	UPROPERTY(EditInstanceOnly, Category="Interaction")
 	TArray<FDefaultInteraction> DefaultInteractions;
-	
+
+	UPROPERTY(EditAnywhere, Category="Interaction|Tags")
+	FGameplayTagContainer DefaultInteractionTags;
+
+	UPROPERTY(EditAnywhere, Category="Interaction|Tags")
+	FGameplayTagContainer InteractionBlockingTags;
 private:
+
+	FGameplayTagContainer ActiveInteractionTags;
 
 	void ScanForInteractables();
 	TObjectPtr<AActor> LastActiveInteractable = nullptr;
@@ -81,4 +98,12 @@ private:
 	
 	//Helpers
 	static AActor* ActorToInteractable(AActor* InActor);
+
+	void CreateInteractionWidgetComp();
+	void ToggleInteractionWidgetCompVis(const bool bVisible) const;
+	void UpdateInteractionWidgetLoc(const AActor* InteractableActor) const;
+	UPROPERTY()
+	UInteractionWidget* InteractionWidgetInstance = nullptr;
+	UPROPERTY()
+	UWidgetComponent* InteractionWidgetCompInstance = nullptr;
 };

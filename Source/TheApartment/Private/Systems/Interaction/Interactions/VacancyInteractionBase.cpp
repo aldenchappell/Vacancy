@@ -5,8 +5,9 @@
 
 #include "Characters/Player/VacancyPlayerCharacter.h"
 #include "Components/Characters/Player/Interaction/InteractionData.h"
+#include "Components/Characters/Player/Interaction/PlayerInteractionComponent.h"
 
-static TAutoConsoleVariable<bool> CVarEnableInteractionLogging(
+static TAutoConsoleVariable<bool> CVarEnableInteractableLogging(
 	TEXT("Vacancy.Interaction.EnableLogging"),
 	false,
 	TEXT("Enable logging for interactions."),
@@ -23,7 +24,6 @@ void UVacancyInteractionBase::InitializeInteraction(const FInteractionInfo& Inte
 void UVacancyInteractionBase::Interact_Implementation(AVacancyPlayerCharacter* InteractingCharacter)
 {
 	// Default implementation does nothing. Override in derived classes to provide specific interaction behavior.
-
 	if (!InteractingCharacter)
 	{
 		OnInteractionFailed(InteractingCharacter, TEXT("Interact called with null InteractingCharacter on %s"));
@@ -53,15 +53,26 @@ bool UVacancyInteractionBase::CanInteract_Implementation(AVacancyPlayerCharacter
 
 void UVacancyInteractionBase::OnInteractionSuccessful(const AVacancyPlayerCharacter* InteractingCharacter) const
 {
-	if (CVarEnableInteractionLogging.GetValueOnGameThread())
+	if (CVarEnableInteractableLogging.GetValueOnGameThread())
 	{
 		UE_LOG(LogTemp, Log, TEXT("%s interacted with %s"), *InteractingCharacter->GetName(), *GetName());
+	}
+
+	if (InteractingCharacter)
+	{
+		if (UPlayerInteractionComponent* InteractionComp = InteractingCharacter->GetInteractionComponent())
+		{
+			const FGameplayTag InteractionTag = InteractionData.InteractionVisualInfo.InteractionTag;
+			FGameplayTagContainer TagsToRemove;
+			TagsToRemove.AddTag(InteractionTag);
+			InteractionComp->RemoveActiveInteractionTags(TagsToRemove);
+		}
 	}
 }
 
 void UVacancyInteractionBase::OnInteractionFailed(const AVacancyPlayerCharacter* InteractingCharacter, const FString& FailureReason) const
 {
-	if (CVarEnableInteractionLogging.GetValueOnGameThread())
+	if (CVarEnableInteractableLogging.GetValueOnGameThread())
 	{
 		UE_LOG(LogTemp, Log, TEXT("%s failed to interact with %s. Reason: %s"), *InteractingCharacter->GetName(), *GetName(), *FailureReason);
 	}

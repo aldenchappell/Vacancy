@@ -23,14 +23,4 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void DrawHUD() override;
 	
-	UPROPERTY(EditAnywhere, Category="UI")
-	TSubclassOf<class UInteractionWidget> InteractionWidgetClass;
-
-	UPROPERTY()
-	class UInteractionWidget* InteractionWidgetInstance = nullptr;
-
-public:
-
-	UFUNCTION()
-	FORCEINLINE UInteractionWidget* GetInteractionWidget() const { return InteractionWidgetInstance; }
 };

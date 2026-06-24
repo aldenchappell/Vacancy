@@ -27,10 +27,8 @@ public:
 	static FTransform GetInteractionTransformFromActor(const AActor* InActor);
 
 	UFUNCTION(Category="Interaction")
-	static UVacancyInteractionBase* GetInteractionFromIdentifier(const AActor* InActor, const FName& InteractionIdentifier);
+	static UVacancyInteractionBase* GetInteractionFromIdentifier(const AActor* InActor, const FGameplayTag& InteractionIdentifier);
 
 	UFUNCTION(Category="Interaction")
 	static AActor* GetInteractableActorFromInteraction(const UVacancyInteractionBase* Interaction);
-
-	
 };
