@@ -507,10 +507,25 @@ void AVacancyPlayerController::HandleLook(const FInputActionValue& Value)
 		return;
 	}
 
-	const float PitchDirection = CurrentInputMode.bInvertLookY ? -1.f : 1.f;
+	/*
+	 * Mouse X controls yaw.
+	 * Mouse Y controls pitch.
+	 *
+	 * For normal first-person controls:
+	 * - Moving mouse right should look right.
+	 * - Moving mouse up should look up.
+	 *
+	 * Unreal's mouse Y direction often feels inverted when passed directly into
+	 * AddPitchInput(), so we flip it by default.
+	 *
+	 * bInvertLookY then intentionally reverses that behavior.
+	 */
+	const float PitchInput = CurrentInputMode.bInvertLookY
+		? LookInput.Y
+		: -LookInput.Y;
 
 	AddYawInput(LookInput.X * CurrentInputMode.LookSensitivity);
-	AddPitchInput(LookInput.Y * CurrentInputMode.LookSensitivity * PitchDirection);
+	AddPitchInput(PitchInput * CurrentInputMode.LookSensitivity);
 }
 
 void AVacancyPlayerController::HandleSprintStarted(const FInputActionValue& Value)
