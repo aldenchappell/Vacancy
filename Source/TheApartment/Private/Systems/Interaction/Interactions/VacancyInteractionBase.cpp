@@ -7,7 +7,7 @@
 #include "Components/Characters/Player/Interaction/InteractionData.h"
 
 static TAutoConsoleVariable<bool> CVarEnableInteractionActorLogging(
-	TEXT("Vacancy.Interaction.EnableLogging"),
+	TEXT("Vacancy.Interactables.EnableLogging"),
 	false,
 	TEXT("Enable logging for interactions."),
 	ECVF_Cheat);

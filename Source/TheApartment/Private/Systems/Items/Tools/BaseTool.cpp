@@ -7,7 +7,7 @@
 ABaseTool::ABaseTool()
 {
 	ToolMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Tool Mesh"));
-	ToolMesh->SetupAttachment(RootComponent);
+	SetRootComponent(ToolMesh);
 
 	ToolMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ToolMesh->SetCollisionResponseToAllChannels(ECR_Ignore);

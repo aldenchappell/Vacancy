@@ -55,24 +55,28 @@ bool UPlayerInteractionComponent::TryInteractWithActiveInteractable() const
 
 bool UPlayerInteractionComponent::TryUseInteraction(const FInteractionInfo& InteractionInfo) const
 {
-	if (!InteractionInfo.InteractionBasicInfo.InteractableActor)
+	AActor* InteractableActor = InteractionInfo.InteractionBasicInfo.InteractableActor;
+
+	if (!IsValid(InteractableActor))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("TryUseInteraction called with null InteractableActor in InteractionInfo."));
-		return false; // If the interactable actor is null, exit early
+		return false;
 	}
 
-	if (const UInteractableInterface* Interactable =
-		Cast<UInteractableInterface>(InteractionInfo.InteractionBasicInfo.InteractableActor);
-		!Interactable)
+	if (!InteractableActor->GetClass()->ImplementsInterface(UInteractableInterface::StaticClass()))
 	{
-		UE_LOG(LogTemp, Warning,
-			TEXT("TryUseInteraction called with an actor that does not implement the InteractableInterface: %s"),
-			*InteractionInfo.InteractionBasicInfo.InteractableActor->GetName());
-		return false; // If the interactable actor does not implement the interface, exit early
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("TryUseInteraction called with an actor that does not implement InteractableInterface: %s"),
+			*GetNameSafe(InteractableActor)
+		);
+
+		return false;
 	}
 
-	// Call the Interact function on the interactable actor
-	IInteractableInterface::Execute_Interact(InteractionInfo.InteractionBasicInfo.InteractableActor, PlayerCharacter); 
+	IInteractableInterface::Execute_Interact(InteractableActor, PlayerCharacter);
+
 	return true;
 }
 
