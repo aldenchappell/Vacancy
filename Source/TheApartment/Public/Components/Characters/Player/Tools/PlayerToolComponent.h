@@ -6,19 +6,28 @@
 #include "Components/ActorComponent.h"
 #include "PlayerToolComponent.generated.h"
 
+class UBasePlayerProgressionComponent;
+class AVacancyPlayerCharacter;
+class ABaseTool;
+
 USTRUCT(BlueprintType)
 struct FPlayerToolAttachmentStateInfo
 {
 	GENERATED_BODY()
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tool Attachment")
+	TSubclassOf<UBasePlayerProgressionComponent> ProgressionComponentClass = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tool Attachment")
+	TSubclassOf<ABaseTool> ToolClass = nullptr;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tool Attachment")
-	AActor* AttachedTool = nullptr;
+	ABaseTool* AttachedTool = nullptr;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tool Attachment")
 	bool bIsAttached = false;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnToolEquipped, const FPlayerToolAttachmentStateInfo&, ToolAttachmentStateInfo);
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class THEAPARTMENT_API UPlayerToolComponent : public UActorComponent
 {
@@ -29,24 +38,33 @@ public:
 	UPlayerToolComponent();
 
 	UFUNCTION()
-	void EquipTool(const FPlayerToolAttachmentStateInfo& ToolAttachmentStateInfo);
+	void EquipNewTool(ABaseTool* NewTool);
 	UFUNCTION()
 	void UnequipCurrentTool();
-	
-	UPROPERTY(BlueprintAssignable, Category="Tool Attachment")
-	FOnToolEquipped OnToolEquipped;
-	
+
 protected:
 	
 	virtual void BeginPlay() override;
-
+	
+	UPROPERTY(VisibleAnywhere, Category="Tools")
+	TArray<ABaseTool*> SpawnedTools;
 private:
 	
-	UPROPERTY(VisibleAnywhere, Category="Tool Attachment")
+	UPROPERTY(VisibleAnywhere, Category="Tool Attachment", meta=(AllowPrivateAccess="true"))
 	FPlayerToolAttachmentStateInfo CurrentToolAttachmentState;
 
+	UPROPERTY()
+	AVacancyPlayerCharacter* OwningPlayerCharacter = nullptr;
+
+	void UpdateCurrentAttachmentState(const FPlayerToolAttachmentStateInfo& NewAttachmentState);
+
+	UFUNCTION()
+	void AddSpawnedTool(ABaseTool* NewSpawnedTool);
+
+	UFUNCTION()
+	void RemoveSpawnedTool(ABaseTool* NewSpawnedTool);
 public:
 	
 	bool IsToolEquipped() const;
-	AActor* GetEquippedTool() const;
+	ABaseTool* GetEquippedTool() const;
 };

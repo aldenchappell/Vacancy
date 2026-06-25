@@ -5,8 +5,6 @@
 
 #include "Characters/Player/VacancyPlayerCharacter.h"
 #include "Components/BoxComponent.h"
-#include "Components/WidgetComponent.h"
-#include "Components/Characters/Player/Interaction/PlayerInteractionComponent.h"
 #include "Systems/Interaction/InteractableUtils.h"
 #include "Systems/Interaction/Interactions/VacancyInteractionBase.h"
 
@@ -71,9 +69,9 @@ void AVacancyInteractableBase::Interact_Implementation(AVacancyPlayerCharacter* 
 		return; // If the interacting character is not valid, do nothing.
 	}
 
-	if (UVacancyInteractionBase* InteractionInstance = Execute_GetInteraction(this))
+	if (GetInteraction())
 	{
-		InteractionInstance->Interact(InteractingCharacter);
+		GetInteraction()->Interact(InteractingCharacter);
 	}
 	else
 	{
@@ -86,19 +84,6 @@ void AVacancyInteractableBase::Interact_Implementation(AVacancyPlayerCharacter* 
 void AVacancyInteractableBase::StartInteraction_Implementation(AVacancyPlayerCharacter* InteractingCharacter)
 {
 	UE_LOG(LogTemp, Log, TEXT("%s started interaction with %s"), *InteractingCharacter->GetName(), *GetName());
-	if (InteractingCharacter)
-	{
-		if (UPlayerInteractionComponent* InteractionComp = InteractingCharacter->GetInteractionComponent())
-		{
-			if (const UVacancyInteractionBase* InteractionInstance = Execute_GetInteraction(this))
-			{
-				const FGameplayTag InteractionTag = InteractionInstance->GetInteractionInfo().InteractionVisualInfo.InteractionTag;
-				FGameplayTagContainer TagsToAdd;
-				TagsToAdd.AddTag(InteractionTag);
-				InteractionComp->ApplyActiveInteractionTags(TagsToAdd);
-			}
-		}
-	}
 }
 
 void AVacancyInteractableBase::EndInteraction_Implementation(AVacancyPlayerCharacter* InteractingCharacter)
