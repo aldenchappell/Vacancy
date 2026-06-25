@@ -5,6 +5,7 @@
 
 #include "Components/Characters/Player/Tools/PlayerToolComponent.h"
 #include "GameFramework/Character.h"
+#include "Systems/Items/Tools/BaseTool.h"
 
 static TAutoConsoleVariable<bool> CVarEnableProgressionComponentLogging(
 	TEXT("Vacancy.ProgressionComponent.EnableLogging"),
@@ -70,10 +71,8 @@ bool UBasePlayerProgressionComponent::AttachToolToDesiredSocket()
 		}
 		return false; // Socket name is not valid, cannot attach
 	}
-
 	
-
-	if (ACharacter* OwnerChar = Cast<ACharacter>(GetOwner()))
+	if (const ACharacter* OwnerChar = Cast<ACharacter>(GetOwner()))
 	{
 		USkeletalMeshComponent* OwnerMesh = OwnerChar->GetMesh();
 		if (!OwnerMesh)
@@ -86,7 +85,7 @@ bool UBasePlayerProgressionComponent::AttachToolToDesiredSocket()
 		}
 
 		//check to see if we already have a tool equipped.
-		const UPlayerToolComponent* PlayerToolComponent = OwnerChar->GetComponentByClass<UPlayerToolComponent>();
+		UPlayerToolComponent* PlayerToolComponent = OwnerChar->GetComponentByClass<UPlayerToolComponent>();
 		if (!PlayerToolComponent)
 		{
 			if (DebugState())
@@ -103,7 +102,7 @@ bool UBasePlayerProgressionComponent::AttachToolToDesiredSocket()
 		}
 
 		// Spawn the tool actor
-		AActor* NewToolInstance = GetWorld()->SpawnActor<AActor>(ComponentToolState.ComponentToolClass);
+		ABaseTool* NewToolInstance = GetWorld()->SpawnActor<ABaseTool>(ComponentToolState.ComponentToolClass);
 		if (!NewToolInstance)
 		{
 			if (DebugState())
@@ -114,7 +113,7 @@ bool UBasePlayerProgressionComponent::AttachToolToDesiredSocket()
 		}
 
 		ComponentToolState.ComponentToolInstance = NewToolInstance;
-
+		
 		// Attach the tool to the specified socket
 		const bool Attached = NewToolInstance->AttachToComponent(
 			OwnerMesh,
@@ -131,6 +130,9 @@ bool UBasePlayerProgressionComponent::AttachToolToDesiredSocket()
 			ComponentToolState.ComponentToolInstance = nullptr;
 			return false; // Failed to attach
 		}
+
+		// Equip the tool using the PlayerToolComponent
+		PlayerToolComponent->EquipNewTool(NewToolInstance);
 	}
 	
 	// Successfully attached the tool to the socket
@@ -170,6 +172,7 @@ bool UBasePlayerProgressionComponent::DebugState() const
 
 void UBasePlayerProgressionComponent::DetachToolFromSocket(const AActor* ToolActor)
 {
+	
 }
 
 void UBasePlayerProgressionComponent::HandleToolAlreadyEquipped(const bool bForceSwap)
