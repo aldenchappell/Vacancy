@@ -7,6 +7,7 @@
 #include "GameFramework/Actor.h"
 #include "VacancyInteractableBase.generated.h"
 
+class UWidgetComponent;
 class UBoxComponent;
 
 UCLASS()
@@ -37,8 +38,6 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interaction")
 	TSubclassOf<UVacancyInteractionBase> InteractionClass;
-
-	
 
 private:
 

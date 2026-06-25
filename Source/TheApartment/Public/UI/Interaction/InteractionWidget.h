@@ -19,7 +19,8 @@ public:
 	
 	void DisplayNewInteraction(const FInteractionInfo& InInteractionInfo);
 	void SwitchInteractionVisibility(const bool bVisible);
-	
+	void ClearInteractionDisplay();
+
 protected:
 
 	virtual void NativeConstruct() override;
@@ -33,6 +34,5 @@ protected:
 
 private:
 
-	void ClearInteractionDisplay();
 	static FName ConvertInteractionEnumToName(const EInteractionType InteractionType);
 };
