@@ -40,7 +40,7 @@ void UBasePlayerProgressionComponent::Internal_ToggleComponentToolState(const bo
 		return; // No change needed, already in the desired state
 	}
 
-	
+	ComponentToolState.bIsToolEnabled = bEnable;
 }
 
 bool UBasePlayerProgressionComponent::AttachToolToDesiredSocket()
