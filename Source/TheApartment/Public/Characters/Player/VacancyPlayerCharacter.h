@@ -60,4 +60,7 @@ public:
 	
 	UFUNCTION(BlueprintPure)
 	FGameplayTagContainer GetActivePlayerTags() const { return ActivePlayerTags; }
+
+	UFUNCTION(BlueprintPure)
+	FORCEINLINE UPlayerToolComponent* GetPlayerToolComponent() const { return PlayerToolComponent; }
 };

@@ -15,7 +15,7 @@
 #include "Engine/World.h"
 //
 
-static TAutoConsoleVariable<bool> CVarEnableInteractionLogging(
+static TAutoConsoleVariable<bool> CVarEnableInteractionActorLogging(
 	TEXT("Vacancy.Interaction.EnableLogging"),
 	false,
 	TEXT("Enable logging for player interaction component."),
@@ -296,7 +296,7 @@ void UPlayerInteractionComponent::ScanForInteractables()
 		if (ValidationData.MaxInteractionDistance > 0.f &&
 			DistanceToInteractable > ValidationData.MaxInteractionDistance)
 		{
-			if (CVarEnableInteractionLogging.GetValueOnGameThread())
+			if (CVarEnableInteractionActorLogging.GetValueOnGameThread())
 			{
 				UE_LOG(
 					LogTemp,
@@ -313,7 +313,7 @@ void UPlayerInteractionComponent::ScanForInteractables()
 
 		if (!Interaction->CanInteract(PlayerCharacterPtr))
 		{
-			if (CVarEnableInteractionLogging.GetValueOnGameThread())
+			if (CVarEnableInteractionActorLogging.GetValueOnGameThread())
 			{
 				UE_LOG(
 					LogTemp,
@@ -352,7 +352,7 @@ void UPlayerInteractionComponent::ScanForInteractables()
 	{
 		StartInteraction(NewInteractionInfo);
 
-		if (CVarEnableInteractionLogging.GetValueOnGameThread())
+		if (CVarEnableInteractionActorLogging.GetValueOnGameThread())
 		{
 			UE_LOG(
 				LogTemp,
@@ -392,7 +392,7 @@ void UPlayerInteractionComponent::InitializeDefaultInteractions(const TArray<FNa
 			}
 			else
 			{
-				if (CVarEnableInteractionLogging.GetValueOnGameThread())
+				if (CVarEnableInteractionActorLogging.GetValueOnGameThread())
 				{
 					UE_LOG(
 						LogTemp,

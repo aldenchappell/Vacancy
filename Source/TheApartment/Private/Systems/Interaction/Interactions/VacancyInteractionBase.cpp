@@ -6,7 +6,7 @@
 #include "Characters/Player/VacancyPlayerCharacter.h"
 #include "Components/Characters/Player/Interaction/InteractionData.h"
 
-static TAutoConsoleVariable<bool> CVarEnableInteractionLogging(
+static TAutoConsoleVariable<bool> CVarEnableInteractionActorLogging(
 	TEXT("Vacancy.Interaction.EnableLogging"),
 	false,
 	TEXT("Enable logging for interactions."),
@@ -53,7 +53,7 @@ bool UVacancyInteractionBase::CanInteract_Implementation(AVacancyPlayerCharacter
 
 void UVacancyInteractionBase::OnInteractionSuccessful(const AVacancyPlayerCharacter* InteractingCharacter) const
 {
-	if (CVarEnableInteractionLogging.GetValueOnGameThread())
+	if (CVarEnableInteractionActorLogging.GetValueOnGameThread())
 	{
 		UE_LOG(LogTemp, Log, TEXT("%s interacted with %s"), *InteractingCharacter->GetName(), *GetName());
 	}
@@ -61,7 +61,7 @@ void UVacancyInteractionBase::OnInteractionSuccessful(const AVacancyPlayerCharac
 
 void UVacancyInteractionBase::OnInteractionFailed(const AVacancyPlayerCharacter* InteractingCharacter, const FString& FailureReason) const
 {
-	if (CVarEnableInteractionLogging.GetValueOnGameThread())
+	if (CVarEnableInteractionActorLogging.GetValueOnGameThread())
 	{
 		UE_LOG(LogTemp, Log, TEXT("%s failed to interact with %s. Reason: %s"), *InteractingCharacter->GetName(), *GetName(), *FailureReason);
 	}
