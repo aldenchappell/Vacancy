@@ -71,9 +71,9 @@ void AVacancyInteractableBase::Interact_Implementation(AVacancyPlayerCharacter* 
 		return; // If the interacting character is not valid, do nothing.
 	}
 
-	if (GetInteraction())
+	if (UVacancyInteractionBase* InteractionInstance = Execute_GetInteraction(this))
 	{
-		GetInteraction()->Interact(InteractingCharacter);
+		InteractionInstance->Interact(InteractingCharacter);
 	}
 	else
 	{
@@ -90,7 +90,7 @@ void AVacancyInteractableBase::StartInteraction_Implementation(AVacancyPlayerCha
 	{
 		if (UPlayerInteractionComponent* InteractionComp = InteractingCharacter->GetInteractionComponent())
 		{
-			if (const UVacancyInteractionBase* InteractionInstance = GetInteraction())
+			if (const UVacancyInteractionBase* InteractionInstance = Execute_GetInteraction(this))
 			{
 				const FGameplayTag InteractionTag = InteractionInstance->GetInteractionInfo().InteractionVisualInfo.InteractionTag;
 				FGameplayTagContainer TagsToAdd;
