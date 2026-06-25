@@ -6,6 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "BasePlayerProgressionComponent.generated.h"
 
+class ABaseTool;
+
 USTRUCT(BlueprintType)
 struct FPlayerProgressionComponentToolState
 {
@@ -17,14 +19,14 @@ struct FPlayerProgressionComponentToolState
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Player Progression Component")
 	bool bStartUnlocked = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Player Progression Component")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Player Progression Component")
 	FName ComponentSocketAttachName = NAME_None;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Player Progression Component")
-	TSubclassOf<AActor> ComponentToolClass = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Player Progression Component")
+	TSubclassOf<ABaseTool> ComponentToolClass = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Player Progression Component")
-	TObjectPtr<AActor> ComponentToolInstance = nullptr;
+	TObjectPtr<ABaseTool> ComponentToolInstance = nullptr;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerProgressionToolStateChanged, const FPlayerProgressionComponentToolState&, NewToolState);
