@@ -59,8 +59,11 @@ void UBaseToolPickupInteraction::Interact_Implementation(AVacancyPlayerCharacter
 	{
 		if (UPlayerToolComponent* ToolComponent = InteractingCharacter->GetPlayerToolComponent())
 		{
-			ToolComponent->UnequipCurrentTool();
-			ToolComponent->EquipNewTool(ToolAttachmentStateInfo.AttachedTool);
+			if (ToolComponent->GetEquippedTool())
+			{
+				ToolComponent->UnequipCurrentTool();
+			}
+			ToolComponent->EquipNewTool(ToolAttachmentStateInfo);
 		}
 		else
 		{

@@ -15,17 +15,31 @@ struct FPlayerToolAttachmentStateInfo
 {
 	GENERATED_BODY()
 
+public:
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tool Attachment")
 	TSubclassOf<UBasePlayerProgressionComponent> ProgressionComponentClass = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tool Attachment")
 	TSubclassOf<ABaseTool> ToolClass = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tool Attachment")
+	FName ToolAttachSocket = NAME_None;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tool Attachment")
 	ABaseTool* AttachedTool = nullptr;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tool Attachment")
 	bool bIsAttached = false;
+	
+	static void Clear()
+	{
+		FPlayerToolAttachmentStateInfo EmptyState;
+		EmptyState.ProgressionComponentClass = nullptr;
+		EmptyState.ToolClass = nullptr;
+		EmptyState.AttachedTool = nullptr;
+		EmptyState.bIsAttached = false;
+	}
 };
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -38,7 +52,7 @@ public:
 	UPlayerToolComponent();
 
 	UFUNCTION()
-	void EquipNewTool(ABaseTool* NewTool);
+	void EquipNewTool(const FPlayerToolAttachmentStateInfo& NewToolState);
 	UFUNCTION()
 	void UnequipCurrentTool();
 
@@ -63,6 +77,8 @@ private:
 
 	UFUNCTION()
 	void RemoveSpawnedTool(ABaseTool* NewSpawnedTool);
+
+	bool AttachToolToSocket(const FPlayerToolAttachmentStateInfo& NewToolState);
 public:
 	
 	bool IsToolEquipped() const;

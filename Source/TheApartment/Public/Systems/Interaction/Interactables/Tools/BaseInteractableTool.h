@@ -18,6 +18,10 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+public:
+	virtual void Interact_Implementation(AVacancyPlayerCharacter* InteractingCharacter) override;
+
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tool")
 	UStaticMeshComponent* ToolMesh;
 	

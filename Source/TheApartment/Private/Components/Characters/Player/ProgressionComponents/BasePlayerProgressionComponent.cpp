@@ -111,7 +111,7 @@ bool UBasePlayerProgressionComponent::AttachToolToDesiredSocket()
 			}
 			return false; // Failed to spawn tool actor
 		}
-
+		
 		ComponentToolState.ComponentToolInstance = NewToolInstance;
 		
 		// Attach the tool to the specified socket
@@ -131,8 +131,13 @@ bool UBasePlayerProgressionComponent::AttachToolToDesiredSocket()
 			return false; // Failed to attach
 		}
 
+		// Set the tool attachment state info on the spawned tool
+		FPlayerToolAttachmentStateInfo NewStateInfo;
+		ConstructNewProgressionInfo(NewStateInfo, NewToolInstance);
+		NewToolInstance->SetToolAttachmentStateInfo(NewStateInfo);
+
 		// Equip the tool using the PlayerToolComponent
-		PlayerToolComponent->EquipNewTool(NewToolInstance);
+		PlayerToolComponent->EquipNewTool(NewStateInfo);
 	}
 	
 	// Successfully attached the tool to the socket
@@ -187,7 +192,6 @@ void UBasePlayerProgressionComponent::HandleToolAlreadyEquipped(const bool bForc
 		if (UPlayerToolComponent* PlayerToolComponent = Cast<ACharacter>(GetOwner())->FindComponentByClass<UPlayerToolComponent>())
 		{
 			PlayerToolComponent->UnequipCurrentTool();
-			AttachToolToDesiredSocket();
 		}
 		else
 		{
@@ -206,4 +210,14 @@ void UBasePlayerProgressionComponent::HandleToolAlreadyEquipped(const bool bForc
 			UE_LOG(LogTemp, Log, TEXT("%s: Tool is already equipped. No action taken."), *GetName());
 		}
 	}
+}
+
+void UBasePlayerProgressionComponent::ConstructNewProgressionInfo(
+FPlayerToolAttachmentStateInfo& NewToolState, ABaseTool*& NewToolInstance) const
+{
+	NewToolState.ProgressionComponentClass = GetClass();
+	NewToolState.ToolClass = ComponentToolState.ComponentToolClass;
+	NewToolState.AttachedTool = NewToolInstance;
+	NewToolState.bIsAttached = true;
+	NewToolState.ToolAttachSocket = ComponentToolState.ComponentSocketAttachName;
 }

@@ -11,6 +11,9 @@ ABaseTool::ABaseTool()
 
 	ToolMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ToolMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	//enable physics simulation for the tool mesh
+	ToolMesh->SetSimulatePhysics(true);
 }
 
 void ABaseTool::BeginPlay()
@@ -27,4 +30,9 @@ void ABaseTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* Unequippi
 void ABaseTool::OnToolUnequipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
 {
 	
+}
+
+FName ABaseTool::GetToolAttachSocket() const
+{
+	return ToolAttachmentStateInfo.ToolAttachSocket;
 }

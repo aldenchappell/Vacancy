@@ -3,7 +3,9 @@
 
 #include "Systems/Interaction/Interactables/Tools/BaseInteractableTool.h"
 
+#include "Characters/Player/VacancyPlayerCharacter.h"
 #include "Components/BoxComponent.h"
+#include "Systems/Interaction/Interactions/Tools/BaseToolPickupInteraction.h"
 
 ABaseInteractableTool::ABaseInteractableTool()
 {
@@ -18,6 +20,22 @@ void ABaseInteractableTool::BeginPlay()
 {
 	Super::BeginPlay();
 	
+}
+
+void ABaseInteractableTool::Interact_Implementation(AVacancyPlayerCharacter* InteractingCharacter)
+{
+	if (!IsValid(InteractingCharacter))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Interact called with null InteractingCharacter on %s"), *GetName());
+		return; // If the interacting character is null, do nothing.
+	}
+	
+	Super::Interact_Implementation(InteractingCharacter);
+	
+	if (UBaseToolPickupInteraction* Interaction = Cast<UBaseToolPickupInteraction>(Execute_GetInteraction(this)))
+	{
+		//Interaction->ToolAttachmentStateInfo.AttachedTool = SpawnedTool;
+	}
 }
 
 
