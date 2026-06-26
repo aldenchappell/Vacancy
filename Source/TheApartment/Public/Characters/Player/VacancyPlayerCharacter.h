@@ -50,6 +50,9 @@ protected:
 	class UPlayerFlashlightComponent* PlayerFlashlightComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UPlayerCameraComponent* PlayerCameraComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UPlayerPhoneComponent* PlayerPhoneComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

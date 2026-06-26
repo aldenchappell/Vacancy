@@ -32,27 +32,68 @@ AVacancyPlayerCharacter* UVacancyPlayerUtils::GetVacancyPlayerCharacter(const UO
 }
 
 UBasePlayerProgressionComponent* UVacancyPlayerUtils::GetPlayerProgressionComponentByClass(
-	const AVacancyPlayerCharacter* PlayerCharacter, const TSubclassOf<UBasePlayerProgressionComponent> ComponentClass)
+	const AVacancyPlayerCharacter* PlayerCharacter,
+	const TSubclassOf<UBasePlayerProgressionComponent> ComponentClass)
 {
 	if (!IsValid(PlayerCharacter))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GetPlayerProgressionComponentByClass called with null PlayerCharacter."));
+		UE_LOG(LogTemp, Warning, TEXT("GetPlayerProgressionComponentByClass failed: PlayerCharacter is null."));
 		return nullptr;
 	}
 
 	if (!ComponentClass)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GetPlayerProgressionComponentByClass called with null ComponentClass."));
+		UE_LOG(LogTemp, Warning, TEXT("GetPlayerProgressionComponentByClass failed: ComponentClass is null."));
 		return nullptr;
 	}
 
-	if (UBasePlayerProgressionComponent* FoundComponent = PlayerCharacter->FindComponentByClass<UBasePlayerProgressionComponent>())
+	TArray<UBasePlayerProgressionComponent*> ProgressionComponents;
+	PlayerCharacter->GetComponents<UBasePlayerProgressionComponent>(ProgressionComponents);
+
+	if (ProgressionComponents.Num() == 0)
 	{
-		if (FoundComponent->IsA(ComponentClass))
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("GetPlayerProgressionComponentByClass failed: no progression components found on %s."),
+			*GetNameSafe(PlayerCharacter)
+		);
+
+		return nullptr;
+	}
+
+	for (UBasePlayerProgressionComponent* ProgressionComponent : ProgressionComponents)
+	{
+		if (!IsValid(ProgressionComponent))
 		{
-			return FoundComponent;
+			continue;
+		}
+
+		if (ProgressionComponent->IsA(ComponentClass))
+		{
+			return ProgressionComponent;
 		}
 	}
-	
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("GetPlayerProgressionComponentByClass failed: could not find progression component class %s on %s. Found %d progression component(s)."),
+		*GetNameSafe(ComponentClass),
+		*GetNameSafe(PlayerCharacter),
+		ProgressionComponents.Num()
+	);
+
+	for (const UBasePlayerProgressionComponent* ProgressionComponent : ProgressionComponents)
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT(" - Found progression component: %s | Class: %s"),
+			*GetNameSafe(ProgressionComponent),
+			*GetNameSafe(ProgressionComponent ? ProgressionComponent->GetClass() : nullptr)
+		);
+	}
+
 	return nullptr;
 }

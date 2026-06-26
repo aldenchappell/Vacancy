@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Systems/Items/Tools/BaseTool.h"
 #include "BasePlayerProgressionComponent.generated.h"
 
+struct FPlayerToolAttachmentStateInfo;
 class ABaseTool;
 
 USTRUCT(BlueprintType)
@@ -44,7 +46,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category="Player Progression Component")
 	FOnPlayerProgressionToolStateChanged OnPlayerProgressionToolStateChanged;
-	
+
+	UFUNCTION(Category = "Player Progression Component")
+	bool EquipProgressionComponentTool();
 protected:
 	virtual void BeginPlay() override;
 
@@ -65,7 +69,8 @@ private:
 	void DetachToolFromSocket(const AActor* ToolActor);
 	void HandleToolAlreadyEquipped(const bool bForceSwap = false);
 
+	void ConstructNewProgressionInfo(FPlayerToolAttachmentStateInfo& NewToolState, ABaseTool*& NewToolInstance) const;
+
 	void UnlockState();
-	bool DebugState() const;
-	
+	static bool DebugState();
 };

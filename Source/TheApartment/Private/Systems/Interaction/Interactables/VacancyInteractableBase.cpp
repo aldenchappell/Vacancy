@@ -69,9 +69,9 @@ void AVacancyInteractableBase::Interact_Implementation(AVacancyPlayerCharacter* 
 		return; // If the interacting character is not valid, do nothing.
 	}
 
-	if (GetInteraction())
+	if (UVacancyInteractionBase* Interaction = Execute_GetInteraction(this))
 	{
-		GetInteraction()->Interact(InteractingCharacter);
+		Interaction->Interact(InteractingCharacter);
 	}
 	else
 	{
