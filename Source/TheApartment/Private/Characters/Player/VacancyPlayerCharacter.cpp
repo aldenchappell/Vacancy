@@ -7,6 +7,7 @@
 #include "Components/Audio/Listener/VacancyAudioListenerComponent.h"
 #include "Components/Characters/Player/Evidence/EvidenceInventoryComponent.h"
 #include "Components/Characters/Player/Interaction/PlayerInteractionComponent.h"
+#include "Components/Characters/Player/ProgressionComponents/Camera/PlayerCameraComponent.h"
 #include "Components/Characters/Player/ProgressionComponents/Flashlight/PlayerFlashlightComponent.h"
 #include "Components/Characters/Player/ProgressionComponents/Phone/PlayerPhoneComponent.h"
 #include "Components/Characters/Player/ProgressionComponents/Recorder/PlayerRecorderComponent.h"
@@ -33,6 +34,7 @@ AVacancyPlayerCharacter::AVacancyPlayerCharacter()
 	EvidenceInventoryComponent = CreateDefaultSubobject<UEvidenceInventoryComponent>(TEXT("EvidenceInventoryComponent"));
 	SuspicionReceiverComponent = CreateDefaultSubobject<USuspicionReceiverComponent>(TEXT("SuspicionReceiverComponent"));
 	PlayerToolComponent = CreateDefaultSubobject<UPlayerToolComponent>(TEXT("PlayerToolComponent"));
+	PlayerCameraComponent = CreateDefaultSubobject<UPlayerCameraComponent>(TEXT("PlayerCameraComponent"));
 	PlayerFlashlightComponent = CreateDefaultSubobject<UPlayerFlashlightComponent>(TEXT("PlayerFlashlightComponent"));
 	PlayerPhoneComponent = CreateDefaultSubobject<UPlayerPhoneComponent>(TEXT("PlayerPhoneComponent"));
 	PlayerRecorderComponent = CreateDefaultSubobject<UPlayerRecorderComponent>(TEXT("PlayerRecorderComponent"));

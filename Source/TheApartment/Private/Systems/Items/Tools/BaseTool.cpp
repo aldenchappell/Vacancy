@@ -3,14 +3,36 @@
 
 #include "Systems/Items/Tools/BaseTool.h"
 
+#include "Characters/Player/VacancyPlayerCharacter.h"
+
 
 ABaseTool::ABaseTool()
 {
 	ToolMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Tool Mesh"));
 	SetRootComponent(ToolMesh);
 
-	ToolMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	ToolMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+	ToolMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	ToolMesh->SetCollisionResponseToAllChannels(ECR_Block);
+
+	//enable physics simulation for the tool mesh
+	ToolMesh->SetSimulatePhysics(true);
+}
+
+void ABaseTool::SetToolAttachmentStateInfo(const FPlayerToolAttachmentStateInfo& NewToolAttachmentStateInfo)
+{
+	if (!IsValid(NewToolAttachmentStateInfo.AttachedTool))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetToolAttachmentStateInfo called with null AttachedTool."));
+		return;
+	}
+
+	if (!IsValid(NewToolAttachmentStateInfo.ToolClass))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetToolAttachmentStateInfo called with null ToolClass."));
+		return;
+	}
+
+	ToolAttachmentStateInfo = NewToolAttachmentStateInfo;
 }
 
 void ABaseTool::BeginPlay()
@@ -21,10 +43,18 @@ void ABaseTool::BeginPlay()
 
 void ABaseTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
 {
-	
+	if (IsValid(InitialToolAnim) && IsValid(UnequippingCharacter))
+	{
+		UnequippingCharacter->PlayAnimMontage(InitialToolAnim);
+	}
 }
 
 void ABaseTool::OnToolUnequipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
 {
 	
+}
+
+FName ABaseTool::GetToolAttachSocket() const
+{
+	return ToolAttachmentStateInfo.ToolAttachSocket;
 }

@@ -646,9 +646,8 @@ UCharacterMovementComponent* AVacancyPlayerController::GetControlledMovementComp
 
 void AVacancyPlayerController::OnInteractPressed_Implementation()
 {
-	UPlayerInteractionComponent* InteractionComponent = Cast<UPlayerInteractionComponent>(
-		GetPawn()->GetComponentByClass(UPlayerInteractionComponent::StaticClass())
-	);
+	const UPlayerInteractionComponent* InteractionComponent = GetPawnComponent<UPlayerInteractionComponent>();
+	
 	if (!InteractionComponent)
 	{
 		UE_LOG(
@@ -707,8 +706,7 @@ void AVacancyPlayerController::OnCrouchPressed_Implementation()
 
 void AVacancyPlayerController::OnFlashlightPressed_Implementation()
 {
-	UPlayerFlashlightComponent* FlashlightComp = Cast<UPlayerFlashlightComponent>(
-		GetPawn()->GetComponentByClass(UPlayerFlashlightComponent::StaticClass()));
+	UPlayerFlashlightComponent* FlashlightComp = GetPawnComponent<UPlayerFlashlightComponent>();
 	
 	if (!FlashlightComp)
 	{
@@ -728,9 +726,8 @@ void AVacancyPlayerController::OnCameraPressed_Implementation()
 {
 	SetSprinting(false);
 
-	UPlayerCameraComponent* CameraComp = Cast<UPlayerCameraComponent>(
-		GetPawn()->GetComponentByClass(UPlayerCameraComponent::StaticClass())
-	);
+	UPlayerCameraComponent* CameraComp = GetPawnComponent<UPlayerCameraComponent>();
+	
 	if (!CameraComp)
 	{
 		UE_LOG(
@@ -761,9 +758,7 @@ void AVacancyPlayerController::OnTakePhotoPressed_Implementation()
 		return;
 	}
 
-	UPlayerCameraComponent* CameraComp = Cast<UPlayerCameraComponent>(
-		GetPawn()->GetComponentByClass(UPlayerCameraComponent::StaticClass())
-	);
+	const UPlayerCameraComponent* CameraComp = GetPawnComponent<UPlayerCameraComponent>();
 	if (!CameraComp)
 	{
 		UE_LOG(
@@ -797,9 +792,8 @@ void AVacancyPlayerController::OnRecorderPressed_Implementation()
 {
 
 
-	UPlayerRecorderComponent* RecorderComp = Cast<UPlayerRecorderComponent>(
-		GetPawn()->GetComponentByClass(UPlayerRecorderComponent::StaticClass())
-	);
+	UPlayerRecorderComponent* RecorderComp = GetPawnComponent<UPlayerRecorderComponent>();
+	
 	if (!RecorderComp)
 	{
 		UE_LOG(
@@ -834,9 +828,7 @@ void AVacancyPlayerController::OnPhonePressed_Implementation()
 {
 	SetSprinting(false);
 
-	UPlayerPhoneComponent* PhoneComp = Cast<UPlayerPhoneComponent>(
-		GetPawn()->GetComponentByClass(UPlayerPhoneComponent::StaticClass())
-	);
+	UPlayerPhoneComponent* PhoneComp = GetPawnComponent<UPlayerPhoneComponent>();
 	if (!PhoneComp)
 	{
 		UE_LOG(
@@ -879,14 +871,18 @@ void AVacancyPlayerController::OnPhonePressed_Implementation()
 
 void AVacancyPlayerController::OnCaseFilePressed_Implementation()
 {
-	bCaseFileOpen = !bCaseFileOpen;
-
 	SetSprinting(false);
 
-	UEvidenceInventoryComponent* EvidenceInventoryComp = Cast<UEvidenceInventoryComponent>(
-		GetPawn()->GetComponentByClass(UEvidenceInventoryComponent::StaticClass())
-	);
-	if (!EvidenceInventoryComp)
+	APawn* ControlledPawn = GetPawn();
+	if (!IsValid(ControlledPawn))
+	{
+		UE_LOG(LogVacancyPlayerController, Warning, TEXT("OnCaseFilePressed failed: pawn is invalid."));
+		return;
+	}
+
+	UEvidenceInventoryComponent* EvidenceInventoryComp = GetPawnComponent<UEvidenceInventoryComponent>();
+
+	if (!IsValid(EvidenceInventoryComp))
 	{
 		UE_LOG(
 			LogVacancyPlayerController,
@@ -895,9 +891,11 @@ void AVacancyPlayerController::OnCaseFilePressed_Implementation()
 		);
 		return;
 	}
-	
-	const bool bCanOpenEvidenceInventory = EvidenceInventoryComp->TryToggleInventory(true);
-	if (!bCanOpenEvidenceInventory)
+
+	const bool bDesiredOpenState = !bCaseFileOpen;
+
+	const bool bCanToggleEvidenceInventory = EvidenceInventoryComp->TryToggleInventory(bDesiredOpenState);
+	if (!bCanToggleEvidenceInventory)
 	{
 		UE_LOG(
 			LogVacancyPlayerController,
@@ -906,14 +904,8 @@ void AVacancyPlayerController::OnCaseFilePressed_Implementation()
 		);
 		return;
 	}
-	else
-	{
-		UE_LOG(
-			LogVacancyPlayerController,
-			Log,
-			TEXT("OnCaseFilePressed: evidence inventory toggled successfully.")
-		);
-	}
+
+	bCaseFileOpen = bDesiredOpenState;
 
 	if (bCaseFileOpen)
 	{
@@ -933,9 +925,8 @@ void AVacancyPlayerController::OnHideExitPressed_Implementation()
 		return;
 	}
 
-	UPlayerInteractionComponent* InteractionComponent = Cast<UPlayerInteractionComponent>(
-		GetPawn()->GetComponentByClass(UPlayerInteractionComponent::StaticClass())
-	);
+	const UPlayerInteractionComponent* InteractionComponent = GetPawnComponent<UPlayerInteractionComponent>();
+	
 	if (!InteractionComponent)
 	{
 		UE_LOG(

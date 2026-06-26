@@ -50,6 +50,9 @@ protected:
 	class UPlayerFlashlightComponent* PlayerFlashlightComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UPlayerCameraComponent* PlayerCameraComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UPlayerPhoneComponent* PlayerPhoneComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -62,5 +65,5 @@ public:
 	FGameplayTagContainer GetActivePlayerTags() const { return ActivePlayerTags; }
 
 	UFUNCTION(BlueprintPure)
-	FORCEINLINE UPlayerInteractionComponent* GetInteractionComponent() const { return PlayerInteractionComponent; }
+	FORCEINLINE UPlayerToolComponent* GetPlayerToolComponent() const { return PlayerToolComponent; }
 };

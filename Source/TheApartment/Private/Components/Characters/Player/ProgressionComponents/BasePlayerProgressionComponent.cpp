@@ -5,13 +5,22 @@
 
 #include "Components/Characters/Player/Tools/PlayerToolComponent.h"
 #include "GameFramework/Character.h"
+#include "HAL/IConsoleManager.h"
 #include "Systems/Items/Tools/BaseTool.h"
 
-static TAutoConsoleVariable<bool> CVarEnableProgressionComponentLogging(
+static bool GVacancyProgressionComponentLogging = false;
+
+static FAutoConsoleVariableRef CVarEnableProgressionComponentLoggingRef(
 	TEXT("Vacancy.ProgressionComponent.EnableLogging"),
-	false,
+	GVacancyProgressionComponentLogging,
 	TEXT("Enable logging for progression components."),
-	ECVF_Cheat);
+	ECVF_Cheat
+);
+
+static bool IsProgressionComponentLoggingEnabled()
+{
+	return GVacancyProgressionComponentLogging;
+}
 
 UBasePlayerProgressionComponent::UBasePlayerProgressionComponent()
 {
@@ -45,113 +54,166 @@ void UBasePlayerProgressionComponent::Internal_ToggleComponentToolState(const bo
 
 bool UBasePlayerProgressionComponent::AttachToolToDesiredSocket()
 {
+	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+	if (!IsValid(OwnerChar))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: Owner is not a valid ACharacter."), *GetNameSafe(this));
+		return false;
+	}
+
 	if (!ComponentToolState.bIsToolEnabled)
 	{
-		if (DebugState())
-		{
-			UE_LOG(LogTemp, Log, TEXT("%s: Cannot attach tool to socket because the tool is not enabled."), *GetName());
-		}
-		return false; // Tool is not enabled, cannot attach
+		UE_LOG(LogTemp, Warning, TEXT("%s: Cannot attach tool because it is not enabled."), *GetNameSafe(this));
+		return false;
 	}
 
 	if (!ComponentToolState.ComponentToolClass)
 	{
-		if (DebugState())
-		{
-			UE_LOG(LogTemp, Log, TEXT("%s: Cannot attach tool to socket because the ComponentToolClass is not set."), *GetName());
-		}
-		return false; // Tool class is not set, cannot attach
+		UE_LOG(LogTemp, Warning, TEXT("%s: ComponentToolClass is not set."), *GetNameSafe(this));
+		return false;
 	}
 
-	if (!ComponentToolState.ComponentSocketAttachName.IsValid())
+	if (ComponentToolState.ComponentSocketAttachName.IsNone())
 	{
-		if (DebugState())
-		{
-			UE_LOG(LogTemp, Log, TEXT("%s: Cannot attach tool to socket because the ComponentSocketAttachName is not valid."), *GetName());
-		}
-		return false; // Socket name is not valid, cannot attach
+		UE_LOG(LogTemp, Warning, TEXT("%s: ComponentSocketAttachName is not set."), *GetNameSafe(this));
+		return false;
 	}
-	
-	if (const ACharacter* OwnerChar = Cast<ACharacter>(GetOwner()))
+
+	USkeletalMeshComponent* OwnerMesh = OwnerChar->GetMesh();
+	if (!IsValid(OwnerMesh))
 	{
-		USkeletalMeshComponent* OwnerMesh = OwnerChar->GetMesh();
-		if (!OwnerMesh)
-		{
-			if (DebugState())
-			{
-				UE_LOG(LogTemp, Log, TEXT("%s: Cannot attach tool to socket because the owner character has no mesh."), *GetName());
-			}
-			return false; // Owner has no mesh, cannot attach
-		}
-
-		//check to see if we already have a tool equipped.
-		UPlayerToolComponent* PlayerToolComponent = OwnerChar->GetComponentByClass<UPlayerToolComponent>();
-		if (!PlayerToolComponent)
-		{
-			if (DebugState())
-			{
-				UE_LOG(LogTemp, Log, TEXT("%s: Cannot attach tool to socket because the owner character has no PlayerToolComponent."), *GetName());
-			}
-			return false; // Owner has no PlayerToolComponent, cannot attach
-		}
-
-		if (PlayerToolComponent->IsToolEquipped())
-		{
-			HandleToolAlreadyEquipped();
-			return false; // Tool is already equipped, cannot attach
-		}
-
-		// Spawn the tool actor
-		ABaseTool* NewToolInstance = GetWorld()->SpawnActor<ABaseTool>(ComponentToolState.ComponentToolClass);
-		if (!NewToolInstance)
-		{
-			if (DebugState())
-			{
-				UE_LOG(LogTemp, Log, TEXT("%s: Failed to spawn tool actor of class %s."), *GetName(), *GetNameSafe(ComponentToolState.ComponentToolClass));
-			}
-			return false; // Failed to spawn tool actor
-		}
-
-		ComponentToolState.ComponentToolInstance = NewToolInstance;
-		
-		// Attach the tool to the specified socket
-		const bool Attached = NewToolInstance->AttachToComponent(
-			OwnerMesh,
-			FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-			ComponentToolState.ComponentSocketAttachName);
-
-		if (!Attached)
-		{
-			if (DebugState())
-			{
-				UE_LOG(LogTemp, Log, TEXT("%s: Failed to attach tool actor to socket %s."), *GetName(), *ComponentToolState.ComponentSocketAttachName.ToString());
-			}
-			NewToolInstance->Destroy(); // Clean up the spawned actor
-			ComponentToolState.ComponentToolInstance = nullptr;
-			return false; // Failed to attach
-		}
-
-		// Equip the tool using the PlayerToolComponent
-		PlayerToolComponent->EquipNewTool(NewToolInstance);
+		UE_LOG(LogTemp, Warning, TEXT("%s: Owner character has no mesh."), *GetNameSafe(this));
+		return false;
 	}
-	
-	// Successfully attached the tool to the socket
-	return true; 
+
+	UPlayerToolComponent* PlayerToolComponent = OwnerChar->FindComponentByClass<UPlayerToolComponent>();
+	if (!IsValid(PlayerToolComponent))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: Owner has no PlayerToolComponent."), *GetNameSafe(this));
+		return false;
+	}
+
+	if (PlayerToolComponent->IsToolEquipped())
+	{
+		HandleToolAlreadyEquipped(true);
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = OwnerChar;
+	SpawnParams.Instigator = OwnerChar;
+
+	ABaseTool* NewToolInstance = GetWorld()->SpawnActor<ABaseTool>(
+		ComponentToolState.ComponentToolClass,
+		FTransform::Identity,
+		SpawnParams
+	);
+
+	if (!IsValid(NewToolInstance))
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("%s: Failed to spawn tool actor of class %s."),
+			*GetNameSafe(this),
+			*GetNameSafe(ComponentToolState.ComponentToolClass)
+		);
+
+		return false;
+	}
+
+	const bool bAttached = NewToolInstance->AttachToComponent(
+		OwnerMesh,
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		ComponentToolState.ComponentSocketAttachName
+	);
+
+	if (!bAttached)
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("%s: Failed to attach tool actor to socket %s."),
+			*GetNameSafe(this),
+			*ComponentToolState.ComponentSocketAttachName.ToString()
+		);
+
+		NewToolInstance->Destroy();
+		return false;
+	}
+
+	ComponentToolState.ComponentToolInstance = NewToolInstance;
+
+	FPlayerToolAttachmentStateInfo NewStateInfo;
+	ConstructNewProgressionInfo(NewStateInfo, NewToolInstance);
+	NewToolInstance->SetToolAttachmentStateInfo(NewStateInfo);
+
+	const bool bEquipped = PlayerToolComponent->EquipNewTool(NewStateInfo);
+	if (!bEquipped)
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("%s: Failed to equip tool actor. NewStateInfo: ProgressionComponentClass=%s, ToolClass=%s, ToolAttachSocket=%s, AttachedTool=%s, bIsAttached=%s"),
+			*GetNameSafe(this),
+			*GetNameSafe(NewStateInfo.ProgressionComponentClass),
+			*GetNameSafe(NewStateInfo.ToolClass),
+			*NewStateInfo.ToolAttachSocket.ToString(),
+			*GetNameSafe(NewStateInfo.AttachedTool),
+			NewStateInfo.bIsAttached ? TEXT("true") : TEXT("false")
+		);
+
+		NewToolInstance->Destroy();
+		ComponentToolState.ComponentToolInstance = nullptr;
+		return false;
+	}
+
+	return true;
 }
 
 void UBasePlayerProgressionComponent::UnlockState()
 {
+	if (ComponentToolState.bIsToolEnabled)
+	{
+		return;
+	}
+
 	ComponentToolState.bIsToolEnabled = true;
+
 	OnComponentToolStateUnlocked();
+
+	OnPlayerProgressionToolStateChanged.Broadcast(ComponentToolState);
+}
+
+bool UBasePlayerProgressionComponent::EquipProgressionComponentTool()
+{
+	if (!ComponentToolState.bIsToolEnabled)
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("%s: Cannot equip progression tool because it is not unlocked/enabled."),
+			*GetNameSafe(this)
+		);
+
+		return false;
+	}
+
+	return AttachToolToDesiredSocket();
 }
 
 void UBasePlayerProgressionComponent::UnlockProgressionComponentTool()
 {
+	if (!IsValid(GetOwner()))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UnlockProgressionComponentTool failed: component has no valid owner."));
+		return;
+	}
+
 	if (DebugState())
 	{
 		UE_LOG(LogTemp, Log, TEXT("%s: Unlocking progression component tool."), *GetName());
 	}
-	
+
 	UnlockState();
 }
 
@@ -165,9 +227,9 @@ void UBasePlayerProgressionComponent::OnComponentToolStateInitialized_Implementa
 	
 }
 
-bool UBasePlayerProgressionComponent::DebugState() const
+bool UBasePlayerProgressionComponent::DebugState()
 {
-	return CVarEnableProgressionComponentLogging.GetValueOnGameThread();
+	return IsProgressionComponentLoggingEnabled();
 }
 
 void UBasePlayerProgressionComponent::DetachToolFromSocket(const AActor* ToolActor)
@@ -177,33 +239,54 @@ void UBasePlayerProgressionComponent::DetachToolFromSocket(const AActor* ToolAct
 
 void UBasePlayerProgressionComponent::HandleToolAlreadyEquipped(const bool bForceSwap)
 {
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	if (!IsValid(OwnerCharacter))
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("%s: Cannot handle equipped tool because owner is not a valid character."),
+			*GetName()
+		);
+		return;
+	}
+
+	UPlayerToolComponent* PlayerToolComponent = OwnerCharacter->FindComponentByClass<UPlayerToolComponent>();
+	if (!IsValid(PlayerToolComponent))
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("%s: Cannot handle equipped tool because PlayerToolComponent is missing."),
+			*GetName()
+		);
+		return;
+	}
+
 	if (bForceSwap)
 	{
-		if (DebugState())
-		{
-			UE_LOG(LogTemp, Log, TEXT("%s: Forcing tool swap."), *GetName());
-		}
+		PlayerToolComponent->UnequipCurrentTool();
+		return;
+	}
 
-		if (UPlayerToolComponent* PlayerToolComponent = Cast<ACharacter>(GetOwner())->FindComponentByClass<UPlayerToolComponent>())
-		{
-			PlayerToolComponent->UnequipCurrentTool();
-			AttachToolToDesiredSocket();
-		}
-		else
-		{
-			if (DebugState())
-			{
-				UE_LOG(LogTemp, Warning, TEXT("%s: Cannot force tool swap because PlayerToolComponent is not found."), *GetName());
-			}
-		}
-	}
-	else
+	if (DebugState())
 	{
-		//TODO: Implement logic to handle the case where the tool is already equipped and we do not want to force a swap.
-		//Send a message to the player that the tool is already equipped and cannot be equipped again.
-		if (DebugState())
-		{
-			UE_LOG(LogTemp, Log, TEXT("%s: Tool is already equipped. No action taken."), *GetName());
-		}
+		UE_LOG(LogTemp, Log, TEXT("%s: Tool is already equipped. No action taken."), *GetName());
 	}
+}
+
+void UBasePlayerProgressionComponent::ConstructNewProgressionInfo(
+FPlayerToolAttachmentStateInfo& NewToolState, ABaseTool*& NewToolInstance) const
+{
+	if (!IsValid(NewToolInstance))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: Cannot construct new progression info because NewToolInstance is null."), *GetName());
+		return;
+	}
+	
+	NewToolState.ProgressionComponentClass = GetClass();
+	NewToolState.ToolClass = ComponentToolState.ComponentToolClass;
+	NewToolState.AttachedTool = NewToolInstance;
+	NewToolState.bIsAttached = true;
+	NewToolState.ToolAttachSocket = ComponentToolState.ComponentSocketAttachName;
 }

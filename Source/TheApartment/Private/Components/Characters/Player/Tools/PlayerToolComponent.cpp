@@ -13,48 +13,59 @@ UPlayerToolComponent::UPlayerToolComponent()
 	
 }
 
-void UPlayerToolComponent::EquipNewTool(ABaseTool* NewTool)
+bool UPlayerToolComponent::EquipNewTool(const FPlayerToolAttachmentStateInfo& NewToolState)
 {
-	if (!IsValid(NewTool))
+	if (!IsValid(NewToolState.AttachedTool))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EquipNewTool called with null NewTool."));
-		return;
+		return false;
 	}
 
-	AddSpawnedTool(NewTool);
+	AddSpawnedTool(NewToolState.AttachedTool);
+	UpdateCurrentAttachmentState(NewToolState);
+
+	return true;
 }
 
 void UPlayerToolComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	OwningPlayerCharacter = UVacancyPlayerUtils::GetVacancyPlayerCharacter(GetOwner());
-	if (!OwningPlayerCharacter)
+	OwningPlayerCharacter = Cast<AVacancyPlayerCharacter>(GetOwner());
+
+	if (!IsValid(OwningPlayerCharacter))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UPlayerToolComponent::BeginPlay - OwningPlayerCharacter is null."));
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("UPlayerToolComponent::BeginPlay failed: owner is not AVacancyPlayerCharacter. Owner: %s"),
+			*GetNameSafe(GetOwner())
+		);
 	}
 }
 
 void UPlayerToolComponent::UnequipCurrentTool()
 {
-	if (!CurrentToolAttachmentState.AttachedTool || !GetEquippedTool())
+	ABaseTool* ToolToUnequip = CurrentToolAttachmentState.AttachedTool;
+
+	if (!IsValid(ToolToUnequip))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UnequipCurrentTool called but no tool is currently equipped."));
+		UE_LOG(LogTemp, Warning, TEXT("UnequipCurrentTool called but no valid tool is currently equipped."));
 		return;
 	}
 
-	if (!OwningPlayerCharacter)
+	if (!IsValid(OwningPlayerCharacter))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UnequipCurrentTool called but OwningPlayerCharacter is null."));
 		return;
 	}
 
-	CurrentToolAttachmentState.AttachedTool->OnToolUnequipped(OwningPlayerCharacter);
-	CurrentToolAttachmentState.AttachedTool->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	CurrentToolAttachmentState.AttachedTool = nullptr;
-	CurrentToolAttachmentState.bIsAttached = false;
+	ToolToUnequip->OnToolUnequipped(OwningPlayerCharacter);
+	ToolToUnequip->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
-	RemoveSpawnedTool(CurrentToolAttachmentState.AttachedTool);
+	RemoveSpawnedTool(ToolToUnequip);
+
+	FPlayerToolAttachmentStateInfo::Clear(CurrentToolAttachmentState);
 }
 
 void UPlayerToolComponent::UpdateCurrentAttachmentState(const FPlayerToolAttachmentStateInfo& NewAttachmentState)
@@ -83,6 +94,7 @@ void UPlayerToolComponent::AddSpawnedTool(ABaseTool* NewSpawnedTool)
 	}
 
 	SpawnedTools.Add(NewSpawnedTool);
+	NewSpawnedTool->OnToolEquipped(OwningPlayerCharacter);
 }
 
 void UPlayerToolComponent::RemoveSpawnedTool(ABaseTool* NewSpawnedTool)
@@ -94,13 +106,40 @@ void UPlayerToolComponent::RemoveSpawnedTool(ABaseTool* NewSpawnedTool)
 	}
 
 	SpawnedTools.Remove(NewSpawnedTool);
-	
-	// If the removed tool was the currently equipped tool, clear the current attachment state
-	if (CurrentToolAttachmentState.AttachedTool == NewSpawnedTool)
+}
+
+bool UPlayerToolComponent::AttachToolToSocket(const FPlayerToolAttachmentStateInfo& NewToolState)
+{
+	if (!IsValid(NewToolState.AttachedTool))
 	{
-		CurrentToolAttachmentState.AttachedTool = nullptr;
-		CurrentToolAttachmentState.bIsAttached = false;
+		UE_LOG(LogTemp, Warning, TEXT("AttachToolToSocket called with null AttachedTool."));
+		return false;
 	}
+
+	if (!IsValid(OwningPlayerCharacter))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AttachToolToSocket called but OwningPlayerCharacter is null."));
+		return false;
+	}
+
+	USkeletalMeshComponent* PlayerMesh = OwningPlayerCharacter->GetMesh();
+	if (!IsValid(PlayerMesh))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AttachToolToSocket called but player mesh is null."));
+		return false;
+	}
+
+	if (NewToolState.ToolAttachSocket.IsNone())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AttachToolToSocket called but ToolAttachSocket is None."));
+		return false;
+	}
+
+	return NewToolState.AttachedTool->AttachToComponent(
+		PlayerMesh,
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		NewToolState.ToolAttachSocket
+	);
 }
 
 bool UPlayerToolComponent::IsToolEquipped() const
