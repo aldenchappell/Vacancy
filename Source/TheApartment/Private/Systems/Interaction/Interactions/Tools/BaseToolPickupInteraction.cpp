@@ -26,49 +26,56 @@ void UBaseToolPickupInteraction::Interact_Implementation(AVacancyPlayerCharacter
 	if (!IsValid(InteractingCharacter))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Interact called with null InteractingCharacter on %s"), *GetName());
-		return; // If the interacting character is null, do nothing.
+		return;
 	}
-	
+
 	if (!ToolAttachmentStateInfo.ToolClass)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ToolToPickupClass is not set for %s. Cannot pick up tool."), *GetName());
-		return; // If the tool class is not set, do nothing.
+		UE_LOG(LogTemp, Warning, TEXT("ToolClass is not set for %s. Cannot pick up tool."), *GetName());
+		return;
+	}
+
+	if (!ToolAttachmentStateInfo.ProgressionComponentClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ProgressionComponentClass is not set for %s. Cannot pick up tool."), *GetName());
+		return;
 	}
 
 	Super::Interact_Implementation(InteractingCharacter);
 
-	// First we will Unlock the component that is responsible for the tool pickup,
-	if (ToolAttachmentStateInfo.ProgressionComponentClass)
+	UBasePlayerProgressionComponent* ProgressionComponent =
+		UVacancyPlayerUtils::GetPlayerProgressionComponentByClass(
+			InteractingCharacter,
+			ToolAttachmentStateInfo.ProgressionComponentClass
+		);
+
+	if (!IsValid(ProgressionComponent))
 	{
-		if (UBasePlayerProgressionComponent* ProgressionComponent =
-			UVacancyPlayerUtils::GetPlayerProgressionComponentByClass(
-				InteractingCharacter,
-				ToolAttachmentStateInfo.ProgressionComponentClass))
-		{
-			ProgressionComponent->UnlockProgressionComponentTool();
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Interact called on %s but the player character does not have the required progression component."), *GetName());
-			return; // If the player character does not have the required progression component, do nothing.
-		}
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("%s could not find progression component class %s on %s."),
+			*GetNameSafe(this),
+			*GetNameSafe(ToolAttachmentStateInfo.ProgressionComponentClass),
+			*GetNameSafe(InteractingCharacter)
+		);
+
+		return;
 	}
 
-	//once we unlock the component, we will check to see if auto equip is true on this interaction, if it is we will equip the tool to the player character.
+	ProgressionComponent->UnlockProgressionComponentTool();
+
 	if (bAutoEquipOnPickup)
 	{
-		if (UPlayerToolComponent* ToolComponent = InteractingCharacter->GetPlayerToolComponent())
+		if (const bool bEquipped = ProgressionComponent->EquipProgressionComponentTool(); !bEquipped)
 		{
-			if (ToolComponent->GetEquippedTool())
-			{
-				ToolComponent->UnequipCurrentTool();
-			}
-			ToolComponent->EquipNewTool(ToolAttachmentStateInfo);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Interact called on %s but the player character does not have a tool component."), *GetName());
-			return; // If the player character does not have a tool component, do nothing.
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("%s unlocked %s but failed to auto-equip its tool."),
+				*GetNameSafe(this),
+				*GetNameSafe(ProgressionComponent)
+			);
 		}
 	}
 }

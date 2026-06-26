@@ -13,49 +13,59 @@ UPlayerToolComponent::UPlayerToolComponent()
 	
 }
 
-void UPlayerToolComponent::EquipNewTool(const FPlayerToolAttachmentStateInfo& NewToolState)
+bool UPlayerToolComponent::EquipNewTool(const FPlayerToolAttachmentStateInfo& NewToolState)
 {
 	if (!IsValid(NewToolState.AttachedTool))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EquipNewTool called with null NewTool."));
-		return;
+		return false;
 	}
 
 	AddSpawnedTool(NewToolState.AttachedTool);
 	UpdateCurrentAttachmentState(NewToolState);
+
+	return true;
 }
 
 void UPlayerToolComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	OwningPlayerCharacter = UVacancyPlayerUtils::GetVacancyPlayerCharacter(GetOwner());
-	if (!OwningPlayerCharacter)
+	OwningPlayerCharacter = Cast<AVacancyPlayerCharacter>(GetOwner());
+
+	if (!IsValid(OwningPlayerCharacter))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UPlayerToolComponent::BeginPlay - OwningPlayerCharacter is null."));
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("UPlayerToolComponent::BeginPlay failed: owner is not AVacancyPlayerCharacter. Owner: %s"),
+			*GetNameSafe(GetOwner())
+		);
 	}
 }
 
 void UPlayerToolComponent::UnequipCurrentTool()
 {
-	if (!CurrentToolAttachmentState.AttachedTool || !GetEquippedTool())
+	ABaseTool* ToolToUnequip = CurrentToolAttachmentState.AttachedTool;
+
+	if (!IsValid(ToolToUnequip))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UnequipCurrentTool called but no tool is currently equipped."));
+		UE_LOG(LogTemp, Warning, TEXT("UnequipCurrentTool called but no valid tool is currently equipped."));
 		return;
 	}
 
-	if (!OwningPlayerCharacter)
+	if (!IsValid(OwningPlayerCharacter))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UnequipCurrentTool called but OwningPlayerCharacter is null."));
 		return;
 	}
 
-	CurrentToolAttachmentState.AttachedTool->OnToolUnequipped(OwningPlayerCharacter);
-	CurrentToolAttachmentState.AttachedTool->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	CurrentToolAttachmentState.AttachedTool = nullptr;
-	CurrentToolAttachmentState.bIsAttached = false;
+	ToolToUnequip->OnToolUnequipped(OwningPlayerCharacter);
+	ToolToUnequip->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
-	RemoveSpawnedTool(CurrentToolAttachmentState.AttachedTool);
+	RemoveSpawnedTool(ToolToUnequip);
+
+	FPlayerToolAttachmentStateInfo::Clear(CurrentToolAttachmentState);
 }
 
 void UPlayerToolComponent::UpdateCurrentAttachmentState(const FPlayerToolAttachmentStateInfo& NewAttachmentState)
@@ -84,6 +94,7 @@ void UPlayerToolComponent::AddSpawnedTool(ABaseTool* NewSpawnedTool)
 	}
 
 	SpawnedTools.Add(NewSpawnedTool);
+	NewSpawnedTool->OnToolEquipped(OwningPlayerCharacter);
 }
 
 void UPlayerToolComponent::RemoveSpawnedTool(ABaseTool* NewSpawnedTool)
@@ -95,12 +106,6 @@ void UPlayerToolComponent::RemoveSpawnedTool(ABaseTool* NewSpawnedTool)
 	}
 
 	SpawnedTools.Remove(NewSpawnedTool);
-	
-	// If the removed tool was the currently equipped tool, clear the current attachment state
-	if (CurrentToolAttachmentState.AttachedTool == NewSpawnedTool)
-	{
-		CurrentToolAttachmentState.Clear();
-	}
 }
 
 bool UPlayerToolComponent::AttachToolToSocket(const FPlayerToolAttachmentStateInfo& NewToolState)
@@ -111,23 +116,29 @@ bool UPlayerToolComponent::AttachToolToSocket(const FPlayerToolAttachmentStateIn
 		return false;
 	}
 
-	if (!OwningPlayerCharacter)
+	if (!IsValid(OwningPlayerCharacter))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AttachToolToSocket called but OwningPlayerCharacter is null."));
 		return false;
 	}
 
-	const FName SocketName = NewToolState.AttachedTool->GetToolAttachSocket();
-	if (SocketName.IsNone())
+	USkeletalMeshComponent* PlayerMesh = OwningPlayerCharacter->GetMesh();
+	if (!IsValid(PlayerMesh))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AttachToolToSocket called but AttachedTool has no valid socket name."));
+		UE_LOG(LogTemp, Warning, TEXT("AttachToolToSocket called but player mesh is null."));
 		return false;
 	}
 
-	return OwningPlayerCharacter->GetMesh()->AttachToComponent(
-		NewToolState.AttachedTool->GetRootComponent(),
+	if (NewToolState.ToolAttachSocket.IsNone())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AttachToolToSocket called but ToolAttachSocket is None."));
+		return false;
+	}
+
+	return NewToolState.AttachedTool->AttachToComponent(
+		PlayerMesh,
 		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-		SocketName
+		NewToolState.ToolAttachSocket
 	);
 }
 

@@ -24,5 +24,14 @@ public:
 		const AVacancyPlayerCharacter* PlayerCharacter,
 		const TSubclassOf<UBasePlayerProgressionComponent> ComponentClass);
 
-	
+	template <typename T>
+	static T* GetPlayerComponent(const AActor* const PlayerCharacter)
+	{
+		if (!IsValid(PlayerCharacter))
+		{
+			return nullptr;
+		}
+
+		return Cast<T>(PlayerCharacter->GetComponentByClass(T::StaticClass()));
+	}
 };

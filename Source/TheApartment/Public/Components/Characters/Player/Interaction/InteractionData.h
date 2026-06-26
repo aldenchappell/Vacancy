@@ -23,11 +23,11 @@ struct FInteractionBasicInfo
 {
 	GENERATED_BODY()
 
-	// /*
-	//  * A tag that can be used to identify the interaction. This can be used to filter interactions in the player interaction component.
-	//  */
-	// UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	// FName InteractionIdentifier = NAME_None;
+	/*
+	 * A tag that can be used to identify the interaction. This can be used to filter interactions in the player interaction component.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FName InteractionIdentifier = NAME_None;
 
 	/*
 	 * The type of interaction. This can be used to filter interactions in the player interaction component.
@@ -48,7 +48,7 @@ struct FInteractionBasicInfo
 	AActor* InteractableActor = nullptr;
 };
 
-USTRUCT(BlueprintTYpe)
+USTRUCT(BlueprintType)
 struct FInteractionVisualInfo
 {
 	GENERATED_BODY()

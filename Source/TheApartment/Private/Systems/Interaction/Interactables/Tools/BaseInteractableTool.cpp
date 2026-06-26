@@ -32,10 +32,7 @@ void ABaseInteractableTool::Interact_Implementation(AVacancyPlayerCharacter* Int
 	
 	Super::Interact_Implementation(InteractingCharacter);
 	
-	if (UBaseToolPickupInteraction* Interaction = Cast<UBaseToolPickupInteraction>(Execute_GetInteraction(this)))
-	{
-		//Interaction->ToolAttachmentStateInfo.AttachedTool = SpawnedTool;
-	}
+	
 }
 
 

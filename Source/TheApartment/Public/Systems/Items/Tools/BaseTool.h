@@ -31,14 +31,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tool")
 	USkeletalMeshComponent* ToolMesh;
 
-	void SetToolAttachmentStateInfo(const FPlayerToolAttachmentStateInfo& NewToolAttachmentStateInfo)
-	{
-		ToolAttachmentStateInfo = NewToolAttachmentStateInfo;
-	}
+	void SetToolAttachmentStateInfo(const FPlayerToolAttachmentStateInfo& NewToolAttachmentStateInfo);
+
 protected:
 	
 	virtual void BeginPlay() override;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Tool")
+	UAnimMontage* InitialToolAnim;
 private:
 
 	FPlayerToolAttachmentStateInfo ToolAttachmentStateInfo;

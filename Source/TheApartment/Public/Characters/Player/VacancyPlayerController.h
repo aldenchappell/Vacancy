@@ -414,8 +414,7 @@ private:
 	ACharacter* GetControlledCharacter() const;
 	UCharacterMovementComponent* GetControlledMovementComponent() const;
 
-private:
-
+	
 	UPROPERTY(Transient)
 	FVacancyInputModeRow CurrentInputMode;
 
@@ -435,4 +434,16 @@ private:
 	bool bCaseFileOpen = false;
 	bool bPauseOpen = false;
 	bool bHiding = false;
+
+	template <typename T>
+	T* GetPawnComponent() const
+	{
+		APawn* ControlledPawn = GetPawn();
+		if (!IsValid(ControlledPawn))
+		{
+			return nullptr;
+		}
+
+		return Cast<T>(ControlledPawn->GetComponentByClass(T::StaticClass()));
+	}
 };

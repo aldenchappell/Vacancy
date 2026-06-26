@@ -32,13 +32,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Tool Attachment")
 	bool bIsAttached = false;
 	
-	static void Clear()
+	static void Clear(FPlayerToolAttachmentStateInfo& ToolStateInfo)
 	{
-		FPlayerToolAttachmentStateInfo EmptyState;
-		EmptyState.ProgressionComponentClass = nullptr;
-		EmptyState.ToolClass = nullptr;
-		EmptyState.AttachedTool = nullptr;
-		EmptyState.bIsAttached = false;
+		ToolStateInfo.ProgressionComponentClass = nullptr;
+		ToolStateInfo.ToolClass = nullptr;
+		ToolStateInfo.AttachedTool = nullptr;
+		ToolStateInfo.bIsAttached = false;
+		ToolStateInfo.ToolAttachSocket = NAME_None;
 	}
 };
 
@@ -52,7 +52,7 @@ public:
 	UPlayerToolComponent();
 
 	UFUNCTION()
-	void EquipNewTool(const FPlayerToolAttachmentStateInfo& NewToolState);
+	bool EquipNewTool(const FPlayerToolAttachmentStateInfo& NewToolState);
 	UFUNCTION()
 	void UnequipCurrentTool();
 
