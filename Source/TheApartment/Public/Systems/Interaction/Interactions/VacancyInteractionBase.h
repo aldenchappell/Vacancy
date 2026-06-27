@@ -35,8 +35,10 @@ protected:
 
 	void OnInteractionSuccessful(const AVacancyPlayerCharacter* InteractingCharacter) const;
 	void OnInteractionFailed(const AVacancyPlayerCharacter* InteractingCharacter, const FString& FailureReason) const;
+
+	TObjectPtr<AActor> OwnerInteractable = nullptr;
 private:
 
 	void SetInteractionOwner(AActor* NewOwner) { OwnerInteractable = NewOwner; }
-	TObjectPtr<AActor> OwnerInteractable = nullptr;
+	
 };

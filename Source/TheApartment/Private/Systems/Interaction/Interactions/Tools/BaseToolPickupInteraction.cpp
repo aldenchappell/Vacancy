@@ -78,4 +78,25 @@ void UBaseToolPickupInteraction::Interact_Implementation(AVacancyPlayerCharacter
 			);
 		}
 	}
+
+	if (OwnerInteractable)
+	{
+		OwnerInteractable->Destroy();
+	}
+	else
+	{
+		if (AActor* OwnerActor = Cast<AActor>(GetOuter()); IsValid(OwnerActor))
+		{
+			OwnerActor->Destroy();
+		}
+		else
+		{
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("%s has no valid OwnerInteractable or Outer Actor to destroy after interaction."),
+				*GetNameSafe(this)
+			);
+		}
+	}
 }

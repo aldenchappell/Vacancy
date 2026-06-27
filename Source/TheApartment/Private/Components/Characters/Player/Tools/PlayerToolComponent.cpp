@@ -95,6 +95,8 @@ void UPlayerToolComponent::AddSpawnedTool(ABaseTool* NewSpawnedTool)
 
 	SpawnedTools.Add(NewSpawnedTool);
 	NewSpawnedTool->OnToolEquipped(OwningPlayerCharacter);
+
+	OwningPlayerCharacter->UpdateAnimPropsForEquippedTool(NewSpawnedTool);
 }
 
 void UPlayerToolComponent::RemoveSpawnedTool(ABaseTool* NewSpawnedTool)

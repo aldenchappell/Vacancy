@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ToolData.h"
 #include "Components/Characters/Player/Tools/PlayerToolComponent.h"
 #include "GameFramework/Actor.h"
 #include "BaseTool.generated.h"
@@ -27,18 +28,29 @@ public:
 
 	UFUNCTION()
 	FName GetToolAttachSocket() const;
+
+	UFUNCTION(BlueprintCallable, Category="Tool")
+	FORCEINLINE FToolDataRow GetToolData() const { return ToolData; }
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tool")
 	USkeletalMeshComponent* ToolMesh;
 
 	void SetToolAttachmentStateInfo(const FPlayerToolAttachmentStateInfo& NewToolAttachmentStateInfo);
 
+	
 protected:
 	
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Tool")
-	UAnimMontage* InitialToolAnim;
+	UAnimMontage* EquipToolAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Tool")
+	UAnimMontage* UnequipToolAnim;
+
+	UPROPERTY(EditDefaultsOnly, Category="Tool")
+	FToolDataRow ToolData;
+	
 private:
 
 	FPlayerToolAttachmentStateInfo ToolAttachmentStateInfo;

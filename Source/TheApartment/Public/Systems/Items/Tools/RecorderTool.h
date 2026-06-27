@@ -12,14 +12,9 @@ class THEAPARTMENT_API ARecorderTool : public ABaseTool
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this actor's properties
 	ARecorderTool();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	
 };

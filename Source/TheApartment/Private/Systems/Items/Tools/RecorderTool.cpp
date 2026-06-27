@@ -4,23 +4,16 @@
 #include "Systems/Items/Tools/RecorderTool.h"
 
 
-// Sets default values
 ARecorderTool::ARecorderTool()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	ToolData.ToolType = EToolType::Recorder;
+	ToolData.ToolDisplayName = FName("Recorder");
+	ToolData.ToolDescription = FText::FromString("A device used to record audio and video evidence.");
 }
 
-// Called when the game starts or when spawned
 void ARecorderTool::BeginPlay()
 {
 	Super::BeginPlay();
 	
-}
-
-// Called every frame
-void ARecorderTool::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }
 
