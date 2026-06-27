@@ -5,7 +5,9 @@
 
 APhoneTool::APhoneTool()
 {
-
+	ToolData.ToolDisplayName = FName("Phone");
+	ToolData.ToolType = EToolType::Phone;
+	ToolData.ToolDescription = FText::FromString("A smartphone used for communication and various tasks.");
 }
 
 void APhoneTool::BeginPlay()

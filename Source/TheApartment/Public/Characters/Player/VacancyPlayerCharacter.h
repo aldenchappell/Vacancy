@@ -8,6 +8,8 @@
 #include "VacancyPlayerCharacter.generated.h"
 
 
+class ABaseTool;
+
 UCLASS()
 class THEAPARTMENT_API AVacancyPlayerCharacter : public AVacancyCharacter
 {
@@ -16,7 +18,8 @@ class THEAPARTMENT_API AVacancyPlayerCharacter : public AVacancyCharacter
 public:
 	AVacancyPlayerCharacter();
 	virtual void Tick(float DeltaTime) override;
-	
+
+	void UpdateAnimPropsForEquippedTool(const ABaseTool* EquippedTool) const;
 protected:
 	virtual void BeginPlay() override;
 

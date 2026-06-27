@@ -4,6 +4,7 @@
 #include "Characters/Player/VacancyPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#include "Characters/Player/VacancyPlayerAnimInstance.h"
 #include "Components/Audio/Listener/VacancyAudioListenerComponent.h"
 #include "Components/Characters/Player/Evidence/EvidenceInventoryComponent.h"
 #include "Components/Characters/Player/Interaction/PlayerInteractionComponent.h"
@@ -50,5 +51,24 @@ void AVacancyPlayerCharacter::BeginPlay()
 void AVacancyPlayerCharacter::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AVacancyPlayerCharacter::UpdateAnimPropsForEquippedTool(const ABaseTool* EquippedTool) const
+{
+	if (!IsValid(EquippedTool))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpdateAnimPropsForEquippedTool called with null EquippedTool."));
+		return;
+	}
+
+	const EToolType EquippedToolType = EquippedTool->GetToolData().ToolType;
+	UVacancyPlayerAnimInstance* AnimInstance = Cast<UVacancyPlayerAnimInstance>(GetMesh()->GetAnimInstance());
+	if (!IsValid(AnimInstance))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpdateAnimPropsForEquippedTool failed: AnimInstance is not valid."));
+		return;
+	}
+
+	AnimInstance->UpdateEquippedToolType(EquippedToolType);
 }
 

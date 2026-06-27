@@ -43,15 +43,28 @@ void ABaseTool::BeginPlay()
 
 void ABaseTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
 {
-	if (IsValid(InitialToolAnim) && IsValid(UnequippingCharacter))
+	if (IsValid(UnequipToolAnim) && IsValid(UnequippingCharacter))
 	{
-		UnequippingCharacter->PlayAnimMontage(InitialToolAnim);
+		UnequippingCharacter->StopAnimMontage(UnequipToolAnim);
+	}
+	
+	if (IsValid(EquipToolAnim) && IsValid(UnequippingCharacter))
+	{
+		UnequippingCharacter->PlayAnimMontage(EquipToolAnim);
 	}
 }
 
 void ABaseTool::OnToolUnequipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
 {
-	
+	if (IsValid(EquipToolAnim) && IsValid(UnequippingCharacter))
+	{
+		UnequippingCharacter->StopAnimMontage(EquipToolAnim);
+	}
+
+	if (IsValid(UnequipToolAnim) && IsValid(UnequippingCharacter))
+	{
+		UnequippingCharacter->PlayAnimMontage(UnequipToolAnim);
+	}
 }
 
 FName ABaseTool::GetToolAttachSocket() const
