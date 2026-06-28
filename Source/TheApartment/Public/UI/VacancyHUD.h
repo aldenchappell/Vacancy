@@ -6,6 +6,10 @@
 #include "GameFramework/HUD.h"
 #include "VacancyHUD.generated.h"
 
+class UPlayerToolHUDSuite;
+class UPlayerCaseInventoryHUD;
+class UPlayerActiveToolHUD;
+class UVacancyUserWidgetBase;
 /**
  * 
  */
@@ -18,9 +22,19 @@ public:
 	
 	AVacancyHUD();
 
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	UPlayerActiveToolHUD* GetActiveToolHUD() const;
+
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	UPlayerCaseInventoryHUD* GetCaseInventoryHUD() const;
+
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	UPlayerToolHUDSuite* GetToolHUDSuite() const;
 protected:
 
 	virtual void BeginPlay() override;
 	virtual void DrawHUD() override;
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "HUD")
+	TSubclassOf<UVacancyUserWidgetBase> HUDWidgetClass;
 };

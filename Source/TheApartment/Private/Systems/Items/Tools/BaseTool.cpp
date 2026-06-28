@@ -4,6 +4,7 @@
 #include "Systems/Items/Tools/BaseTool.h"
 
 #include "Characters/Player/VacancyPlayerCharacter.h"
+#include "UI/VacancyHUDData.h"
 
 
 ABaseTool::ABaseTool()
@@ -52,6 +53,22 @@ void ABaseTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* Unequippi
 	{
 		UnequippingCharacter->PlayAnimMontage(EquipToolAnim);
 	}
+
+	const float MontageDuration = IsValid(EquipToolAnim) ? EquipToolAnim->GetPlayLength() : 0.f;
+	FTimerHandle EquipTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+	EquipTimerHandle,
+		[this, UnequippingCharacter]()
+		{
+			if (IsValid(UnequippingCharacter))
+			{
+				UnequippingCharacter->UpdateHUDByType(EVacancyHUDType::ToolHUD);
+			}
+		},
+		MontageDuration,
+		false
+	);
+	// Additional logic for when the tool is equipped will be implemented in derived classes.
 }
 
 void ABaseTool::OnToolUnequipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)

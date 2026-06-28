@@ -8,6 +8,7 @@
 #include "InputActionValue.h"
 #include "VacancyPlayerController.generated.h"
 
+class AVacancyPlayerCharacter;
 class AVacancyHUD;
 class UInputAction;
 class UInputMappingContext;
@@ -411,7 +412,7 @@ private:
 	void SetSprinting(bool bNewSprinting);
 	void UpdateMovementSpeed();
 
-	ACharacter* GetControlledCharacter() const;
+	AVacancyPlayerCharacter* GetControlledCharacter() const;
 	UCharacterMovementComponent* GetControlledMovementComponent() const;
 
 	
@@ -434,16 +435,4 @@ private:
 	bool bCaseFileOpen = false;
 	bool bPauseOpen = false;
 	bool bHiding = false;
-
-	template <typename T>
-	T* GetPawnComponent() const
-	{
-		APawn* ControlledPawn = GetPawn();
-		if (!IsValid(ControlledPawn))
-		{
-			return nullptr;
-		}
-
-		return Cast<T>(ControlledPawn->GetComponentByClass(T::StaticClass()));
-	}
 };

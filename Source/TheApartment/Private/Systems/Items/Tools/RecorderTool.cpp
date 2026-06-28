@@ -17,3 +17,13 @@ void ARecorderTool::BeginPlay()
 	
 }
 
+void ARecorderTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
+{
+	Super::OnToolEquipped_Implementation(UnequippingCharacter);
+}
+
+void ARecorderTool::OnToolUnequipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
+{
+	Super::OnToolUnequipped_Implementation(UnequippingCharacter);
+}
+

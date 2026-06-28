@@ -5,13 +5,14 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Characters/Player/Interaction/InteractionData.h"
+#include "UI/VacancyUserWidgetBase.h"
 #include "InteractionWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class THEAPARTMENT_API UInteractionWidget : public UUserWidget
+class THEAPARTMENT_API UInteractionWidget : public UVacancyUserWidgetBase
 {
 	GENERATED_BODY()
 

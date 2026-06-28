@@ -5,9 +5,11 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Characters/VacancyCharacter.h"
+#include "UI/VacancyHUDData.h"
 #include "VacancyPlayerCharacter.generated.h"
 
 
+class UVacancyUserWidgetBase;
 class ABaseTool;
 
 UCLASS()
@@ -20,6 +22,8 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	void UpdateAnimPropsForEquippedTool(const ABaseTool* EquippedTool) const;
+
+	void UpdateHUDByType(const EVacancyHUDType& HUDType) const;
 protected:
 	virtual void BeginPlay() override;
 
@@ -36,6 +40,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UPlayerInteractionComponent* PlayerInteractionComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UPlayerObjectiveComponent* PlayerObjectiveComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UVacancyAudioListenerComponent* AudioListenerComponent;
@@ -62,6 +69,10 @@ protected:
 	class UPlayerRecorderComponent* PlayerRecorderComponent;
 	
 #pragma endregion
+
+private:
+	static bool ValidateHUDWidget(UVacancyUserWidgetBase*& HUDWidget);
+	
 public:
 	
 	UFUNCTION(BlueprintPure)

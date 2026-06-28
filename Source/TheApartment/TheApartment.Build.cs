@@ -14,11 +14,15 @@ public class TheApartment : ModuleRules
 			"CoreUObject", 
 			"Engine", 
 			"InputCore", 
-			"UMG", 
 			"AIModule", 
 			"NavigationSystem", 
 			"GameplayTags",
-			"EnhancedInput"
+			"EnhancedInput",
+			
+			// UI dependencies
+			"UMG",
+			"Slate",
+			"SlateCore"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

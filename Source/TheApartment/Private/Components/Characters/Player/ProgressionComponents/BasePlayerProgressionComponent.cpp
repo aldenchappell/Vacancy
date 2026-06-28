@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "HAL/IConsoleManager.h"
 #include "Systems/Items/Tools/BaseTool.h"
+#include "Utilities/Gameplay/VacancyPlayerUtils.h"
 
 static bool GVacancyProgressionComponentLogging = false;
 
@@ -37,19 +38,31 @@ void UBasePlayerProgressionComponent::BeginPlay()
 	}
 }
 
-void UBasePlayerProgressionComponent::ToggleComponentToolState(const bool bEnable)
+bool UBasePlayerProgressionComponent::ToggleComponentToolState(const bool bEnable)
 {
-	Internal_ToggleComponentToolState(bEnable);
+	return Internal_ToggleComponentToolState(bEnable);
 }
 
-void UBasePlayerProgressionComponent::Internal_ToggleComponentToolState(const bool bEnable)
+bool UBasePlayerProgressionComponent::Internal_ToggleComponentToolState(const bool bEnable)
 {
 	if (ComponentToolState.bIsToolEnabled == bEnable)
 	{
-		return; // No change needed, already in the desired state
+		return false; // No change needed, already in the desired state
+	}
+
+	if (!IsValid(ComponentToolState.ComponentToolInstance))
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("%s: Cannot toggle tool state because ComponentToolInstance is not valid."),
+			*GetNameSafe(this)
+		);
+		return false;
 	}
 
 	ComponentToolState.bIsToolEnabled = bEnable;
+	return !bEnable ? DetachToolFromSocket(ComponentToolState.ComponentToolInstance) : AttachToolToDesiredSocket();
 }
 
 bool UBasePlayerProgressionComponent::AttachToolToDesiredSocket()
@@ -86,7 +99,7 @@ bool UBasePlayerProgressionComponent::AttachToolToDesiredSocket()
 		return false;
 	}
 
-	UPlayerToolComponent* PlayerToolComponent = OwnerChar->FindComponentByClass<UPlayerToolComponent>();
+	UPlayerToolComponent* PlayerToolComponent = UVacancyPlayerUtils::GetPlayerComponent<UPlayerToolComponent>(OwnerChar);
 	if (!IsValid(PlayerToolComponent))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s: Owner has no PlayerToolComponent."), *GetNameSafe(this));
@@ -232,12 +245,37 @@ bool UBasePlayerProgressionComponent::DebugState()
 	return IsProgressionComponentLoggingEnabled();
 }
 
-void UBasePlayerProgressionComponent::DetachToolFromSocket(const AActor* ToolActor)
+bool UBasePlayerProgressionComponent::DetachToolFromSocket(const AActor* ToolActor) const
 {
+	if (!IsValid(ToolActor))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: Cannot detach tool because ToolActor is not valid."), *GetName());
+		return false;
+	}
+
+	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+	if (!IsValid(OwnerChar))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: Cannot detach tool because owner is not a valid ACharacter."), *GetName());
+		return false;
+	}
+
+	UPlayerToolComponent* PlayerToolComponent = OwnerChar->FindComponentByClass<UPlayerToolComponent>();
+	if (!IsValid(PlayerToolComponent))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: Cannot detach tool because PlayerToolComponent is missing."), *GetName());
+		return false;
+	}
+
+	if (DebugState())
+	{
+		UE_LOG(LogTemp, Log, TEXT("%s: Tool detached from socket and unequipped."), *GetName());
+	}
 	
+	return PlayerToolComponent->UnequipCurrentTool();
 }
 
-void UBasePlayerProgressionComponent::HandleToolAlreadyEquipped(const bool bForceSwap)
+void UBasePlayerProgressionComponent::HandleToolAlreadyEquipped(const bool bForceSwap) const
 {
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
 	if (!IsValid(OwnerCharacter))

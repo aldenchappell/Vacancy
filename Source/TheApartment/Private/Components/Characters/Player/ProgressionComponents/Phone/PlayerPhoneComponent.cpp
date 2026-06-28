@@ -15,7 +15,3 @@ void UPlayerPhoneComponent::BeginPlay()
 
 }
 
-bool UPlayerPhoneComponent::TryTogglePhone(const bool bActive)
-{
-	return false;
-}

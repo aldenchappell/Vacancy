@@ -44,20 +44,20 @@ void UPlayerToolComponent::BeginPlay()
 	}
 }
 
-void UPlayerToolComponent::UnequipCurrentTool()
+bool UPlayerToolComponent::UnequipCurrentTool()
 {
 	ABaseTool* ToolToUnequip = CurrentToolAttachmentState.AttachedTool;
 
 	if (!IsValid(ToolToUnequip))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UnequipCurrentTool called but no valid tool is currently equipped."));
-		return;
+		return false;
 	}
 
 	if (!IsValid(OwningPlayerCharacter))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UnequipCurrentTool called but OwningPlayerCharacter is null."));
-		return;
+		return false;
 	}
 
 	ToolToUnequip->OnToolUnequipped(OwningPlayerCharacter);
@@ -66,6 +66,7 @@ void UPlayerToolComponent::UnequipCurrentTool()
 	RemoveSpawnedTool(ToolToUnequip);
 
 	FPlayerToolAttachmentStateInfo::Clear(CurrentToolAttachmentState);
+	return true;
 }
 
 void UPlayerToolComponent::UpdateCurrentAttachmentState(const FPlayerToolAttachmentStateInfo& NewAttachmentState)
@@ -108,9 +109,11 @@ void UPlayerToolComponent::RemoveSpawnedTool(ABaseTool* NewSpawnedTool)
 	}
 
 	SpawnedTools.Remove(NewSpawnedTool);
+
+	OwningPlayerCharacter->UpdateAnimPropsForEquippedTool(NewSpawnedTool);
 }
 
-bool UPlayerToolComponent::AttachToolToSocket(const FPlayerToolAttachmentStateInfo& NewToolState)
+bool UPlayerToolComponent::AttachToolToSocket(const FPlayerToolAttachmentStateInfo& NewToolState) const
 {
 	if (!IsValid(NewToolState.AttachedTool))
 	{

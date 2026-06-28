@@ -5,6 +5,7 @@
 #include "Components/ActorComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Characters/Player/VacancyPlayerCharacter.h"
 #include "Components/Characters/Player/Evidence/EvidenceInventoryComponent.h"
 #include "Components/Characters/Player/Interaction/PlayerInteractionComponent.h"
 #include "Components/Characters/Player/ProgressionComponents/Camera/PlayerCameraComponent.h"
@@ -15,6 +16,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/HUD.h"
 #include "UI/VacancyHUD.h"
+#include "Utilities/Gameplay/VacancyPlayerUtils.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogVacancyPlayerController, Log, All);
 
@@ -600,7 +602,7 @@ void AVacancyPlayerController::HandlePauseStarted(const FInputActionValue& Value
 
 void AVacancyPlayerController::SetSprinting(bool bNewSprinting)
 {
-	ACharacter* ControlledCharacter = GetControlledCharacter();
+	AVacancyPlayerCharacter* ControlledCharacter = GetControlledCharacter();
 
 	const bool bCanSprint =
 		bNewSprinting &&
@@ -633,9 +635,9 @@ void AVacancyPlayerController::UpdateMovementSpeed()
 	MovementComponent->MaxWalkSpeedCrouched = CurrentInputMode.CrouchSpeed;
 }
 
-ACharacter* AVacancyPlayerController::GetControlledCharacter() const
+AVacancyPlayerCharacter* AVacancyPlayerController::GetControlledCharacter() const
 {
-	return Cast<ACharacter>(GetPawn());
+	return Cast<AVacancyPlayerCharacter>(GetPawn());
 }
 
 UCharacterMovementComponent* AVacancyPlayerController::GetControlledMovementComponent() const
@@ -646,7 +648,7 @@ UCharacterMovementComponent* AVacancyPlayerController::GetControlledMovementComp
 
 void AVacancyPlayerController::OnInteractPressed_Implementation()
 {
-	const UPlayerInteractionComponent* InteractionComponent = GetPawnComponent<UPlayerInteractionComponent>();
+	const UPlayerInteractionComponent* InteractionComponent = UVacancyPlayerUtils::GetPlayerComponent<UPlayerInteractionComponent>(GetControlledCharacter());
 	
 	if (!InteractionComponent)
 	{
@@ -706,7 +708,7 @@ void AVacancyPlayerController::OnCrouchPressed_Implementation()
 
 void AVacancyPlayerController::OnFlashlightPressed_Implementation()
 {
-	UPlayerFlashlightComponent* FlashlightComp = GetPawnComponent<UPlayerFlashlightComponent>();
+	UPlayerFlashlightComponent* FlashlightComp = UVacancyPlayerUtils::GetPlayerComponent<UPlayerFlashlightComponent>(GetControlledCharacter());
 	
 	if (!FlashlightComp)
 	{
@@ -726,7 +728,7 @@ void AVacancyPlayerController::OnCameraPressed_Implementation()
 {
 	SetSprinting(false);
 
-	UPlayerCameraComponent* CameraComp = GetPawnComponent<UPlayerCameraComponent>();
+	UPlayerCameraComponent* CameraComp = UVacancyPlayerUtils::GetPlayerComponent<UPlayerCameraComponent>(GetControlledCharacter());
 	
 	if (!CameraComp)
 	{
@@ -758,7 +760,7 @@ void AVacancyPlayerController::OnTakePhotoPressed_Implementation()
 		return;
 	}
 
-	const UPlayerCameraComponent* CameraComp = GetPawnComponent<UPlayerCameraComponent>();
+	const UPlayerCameraComponent* CameraComp = UVacancyPlayerUtils::GetPlayerComponent<UPlayerCameraComponent>(GetControlledCharacter());
 	if (!CameraComp)
 	{
 		UE_LOG(
@@ -792,7 +794,7 @@ void AVacancyPlayerController::OnRecorderPressed_Implementation()
 {
 
 
-	UPlayerRecorderComponent* RecorderComp = GetPawnComponent<UPlayerRecorderComponent>();
+	UPlayerRecorderComponent* RecorderComp = UVacancyPlayerUtils::GetPlayerComponent<UPlayerRecorderComponent>(GetControlledCharacter());
 	
 	if (!RecorderComp)
 	{
@@ -828,7 +830,7 @@ void AVacancyPlayerController::OnPhonePressed_Implementation()
 {
 	SetSprinting(false);
 
-	UPlayerPhoneComponent* PhoneComp = GetPawnComponent<UPlayerPhoneComponent>();
+	UPlayerPhoneComponent* PhoneComp = UVacancyPlayerUtils::GetPlayerComponent<UPlayerPhoneComponent>(GetControlledCharacter());
 	if (!PhoneComp)
 	{
 		UE_LOG(
@@ -839,7 +841,7 @@ void AVacancyPlayerController::OnPhonePressed_Implementation()
 		return;
 	}
 	
-	const bool bToggledPhone = PhoneComp->TryTogglePhone(!bPhoneOpen);
+	const bool bToggledPhone = PhoneComp->ToggleComponentToolState(!bPhoneOpen);
 	if (!bToggledPhone)
 	{
 		UE_LOG(
@@ -880,7 +882,7 @@ void AVacancyPlayerController::OnCaseFilePressed_Implementation()
 		return;
 	}
 
-	UEvidenceInventoryComponent* EvidenceInventoryComp = GetPawnComponent<UEvidenceInventoryComponent>();
+	UEvidenceInventoryComponent* EvidenceInventoryComp = UVacancyPlayerUtils::GetPlayerComponent<UEvidenceInventoryComponent>(GetControlledCharacter());
 
 	if (!IsValid(EvidenceInventoryComp))
 	{
@@ -925,7 +927,7 @@ void AVacancyPlayerController::OnHideExitPressed_Implementation()
 		return;
 	}
 
-	const UPlayerInteractionComponent* InteractionComponent = GetPawnComponent<UPlayerInteractionComponent>();
+	const UPlayerInteractionComponent* InteractionComponent = UVacancyPlayerUtils::GetPlayerComponent<UPlayerInteractionComponent>(GetControlledCharacter());
 	
 	if (!InteractionComponent)
 	{
