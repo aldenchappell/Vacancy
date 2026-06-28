@@ -16,4 +16,16 @@ void ACameraTool::BeginPlay()
 	
 }
 
+void ACameraTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
+{
+	Super::OnToolEquipped_Implementation(UnequippingCharacter);
+
+	
+}
+
+void ACameraTool::OnToolUnequipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
+{
+	Super::OnToolUnequipped_Implementation(UnequippingCharacter);
+}
+
 

@@ -15,3 +15,13 @@ void APhoneTool::BeginPlay()
 	Super::BeginPlay();
 	
 }
+
+void APhoneTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
+{
+	Super::OnToolEquipped_Implementation(UnequippingCharacter);
+}
+
+void APhoneTool::OnToolUnequipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
+{
+	Super::OnToolUnequipped_Implementation(UnequippingCharacter);
+}

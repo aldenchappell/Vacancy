@@ -15,8 +15,6 @@ class THEAPARTMENT_API UPlayerPhoneComponent : public UBasePlayerProgressionComp
 public:
 	UPlayerPhoneComponent();
 
-	bool TryTogglePhone(const bool bActive);
-
 protected:
 	
 	virtual void BeginPlay() override;

@@ -27,3 +27,13 @@ void AFlashlightTool::BeginPlay()
 	Super::BeginPlay();
 	
 }
+
+void AFlashlightTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
+{
+	Super::OnToolEquipped_Implementation(UnequippingCharacter);
+}
+
+void AFlashlightTool::OnToolUnequipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
+{
+	Super::OnToolUnequipped_Implementation(UnequippingCharacter);
+}

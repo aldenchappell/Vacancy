@@ -40,6 +40,9 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void OnToolEquipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter) override;
+	virtual void OnToolUnequipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter) override;	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Flashlight")
 	USpotLightComponent* FlashlightComponent;
 
