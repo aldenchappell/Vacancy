@@ -21,7 +21,19 @@ public:
 	bool RemoveActiveObjective(UBaseVacancyCaseObjective* ObjectiveToRemove);
 
 	UFUNCTION(BlueprintCallable, Category="Objectives")
+	bool TryBeginObjectiveByID(const FName& ObjectiveID) const;
+
+	UFUNCTION(BlueprintCallable, Category="Objectives")
+	bool TryCompleteObjectiveByID(const FName& ObjectiveID) const;
+
+	UFUNCTION(BlueprintCallable, Category="Objectives")
+	bool TryFailObjectiveByID(const FName& ObjectiveID, const FString& FailReason) const;
+	
+	UFUNCTION(BlueprintCallable, Category="Objectives")
 	TArray<UBaseVacancyCaseObjective*> GetActiveObjectives() const;
+
+	UFUNCTION(BlueprintCallable, Category="Objectives")
+	TArray<UBaseVacancyCaseObjective*> GetCompletedObjectives() const;
 protected:
 	virtual void BeginPlay() override;
 
@@ -38,4 +50,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Objectives", meta=(AllowPrivateAccess="true"))
 	TArray<UBaseVacancyCaseObjective*> CompletedObjectives;
+
+	bool IsObjectiveComplete() const;
 };

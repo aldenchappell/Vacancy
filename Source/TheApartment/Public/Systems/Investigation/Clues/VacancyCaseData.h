@@ -1,10 +1,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BaseVacancyClue.h"
 #include "GameplayTagContainer.h"
 #include "VacancyCaseData.generated.h"
 
+class UBaseVacancyClue;
 class UVacancyCaseDataAsset;
 
 USTRUCT(BlueprintType)
@@ -167,7 +167,7 @@ struct FVacancyCaseObjectiveStateData
 	 * Status of the objective, used to determine if the objective is in progress, completed, or failed
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
-	EVacancyCaseObjectiveStatus ObjectiveStatus = EVacancyCaseObjectiveStatus::InProgress;
+	EVacancyCaseObjectiveStatus ObjectiveStatus = EVacancyCaseObjectiveStatus::MAX;
 };
 
 USTRUCT(BlueprintType)

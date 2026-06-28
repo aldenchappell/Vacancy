@@ -2,3 +2,8 @@
 
 
 #include "UI/Inventory/Tools/PlayerToolHUDSuite.h"
+
+void UPlayerToolHUDSuite::UpdateToolSuiteHUD()
+{
+	
+}

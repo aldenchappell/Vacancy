@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "VacancyHUDData.h"
 #include "GameFramework/HUD.h"
 #include "VacancyHUD.generated.h"
 
+class UPlayerGameplayHUD;
 class UPlayerToolHUDSuite;
 class UPlayerCaseInventoryHUD;
 class UPlayerActiveToolHUD;
@@ -30,6 +32,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "HUD")
 	UPlayerToolHUDSuite* GetToolHUDSuite() const;
+
+	void SetHUDPointerRef(EVacancyHUDType HUDType, UVacancyUserWidgetBase* WidgetPtr);
 protected:
 
 	virtual void BeginPlay() override;
@@ -37,4 +41,18 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "HUD")
 	TSubclassOf<UVacancyUserWidgetBase> HUDWidgetClass;
+
+private:
+
+	UPROPERTY()
+	UPlayerGameplayHUD* HUDWidgetInstance;
+
+	UPROPERTY()
+	UPlayerActiveToolHUD* ActiveToolHUD;
+
+	UPROPERTY()
+	UPlayerCaseInventoryHUD* CaseInventoryHUD;
+
+	UPROPERTY()
+	UPlayerToolHUDSuite* ToolHUDSuite;
 };

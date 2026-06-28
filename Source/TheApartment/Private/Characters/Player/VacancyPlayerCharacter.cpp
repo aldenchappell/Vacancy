@@ -89,48 +89,67 @@ void AVacancyPlayerCharacter::UpdateHUDByType(const EVacancyHUDType& HUDType) co
 		return;
 	}
 
-	UVacancyUserWidgetBase* HUDWidget = UVacancyUIUtils::GetHUDElementByType(this, HUDType);
-
 	switch (HUDType)
 	{
 		case EVacancyHUDType::ToolHUD:
-			// Logic to update the HUD for ToolHUD
-			HUDWidget = UVacancyUIUtils::GetHUDElementByType(this, EVacancyHUDType::ToolHUD);
+		{
+			UVacancyUserWidgetBase* HUDWidget =
+				UVacancyUIUtils::GetHUDElementByType(this, EVacancyHUDType::ToolHUD);
+
 			UPlayerActiveToolHUD* ToolHUDWidget = Cast<UPlayerActiveToolHUD>(HUDWidget);
 			if (!IsValid(ToolHUDWidget))
 			{
 				UE_LOG(LogTemp, Warning, TEXT("UpdateHUDByType failed: ToolHUDWidget is not valid."));
 				return;
 			}
+
 			ToolHUDWidget->UpdateToolHUD();
 			break;
+		}
+
 		case EVacancyHUDType::ToolHUDSuite:
-			// Logic to update the HUD for ToolHUDSuite
-			HUDWidget = UVacancyUIUtils::GetHUDElementByType(this, EVacancyHUDType::ToolHUDSuite);
-			ValidateHUDWidget(HUDWidget);
+		{
+			UVacancyUserWidgetBase* HUDWidget =
+				UVacancyUIUtils::GetHUDElementByType(this, EVacancyHUDType::ToolHUDSuite);
+
 			UPlayerToolHUDSuite* ToolHUDSuiteWidget = Cast<UPlayerToolHUDSuite>(HUDWidget);
 			if (!IsValid(ToolHUDSuiteWidget))
 			{
-				UE_LOG(LogTemp, Warning, TEXT("UpdateHUDByType failed: ToolHUDSuite widget is not valid."));
+				UE_LOG(LogTemp, Warning, TEXT("UpdateHUDByType failed: ToolHUDSuiteWidget is not valid."));
 				return;
 			}
+
 			ToolHUDSuiteWidget->UpdateToolSuiteHUD();
 			break;
+		}
+
 		case EVacancyHUDType::CaseInventory:
-			// Logic to update the HUD for CaseInventory
-			HUDWidget = UVacancyUIUtils::GetHUDElementByType(this, EVacancyHUDType::CaseInventory);
-			ValidateHUDWidget(HUDWidget);
+		{
+			UVacancyUserWidgetBase* HUDWidget =
+				UVacancyUIUtils::GetHUDElementByType(this, EVacancyHUDType::CaseInventory);
+
 			UPlayerCaseInventoryHUD* CaseInventoryWidget = Cast<UPlayerCaseInventoryHUD>(HUDWidget);
 			if (!IsValid(CaseInventoryWidget))
 			{
-				UE_LOG(LogTemp, Warning, TEXT("UpdateHUDByType failed: CaseInventory widget is not valid."));
+				UE_LOG(LogTemp, Warning, TEXT("UpdateHUDByType failed: CaseInventoryWidget is not valid."));
 				return;
 			}
+
 			CaseInventoryWidget->UpdateCaseInventoryHUD();
 			break;
+		}
+
 		default:
-			UE_LOG(LogTemp, Warning, TEXT("UpdateHUDByType called with unhandled HUDType: %d"), static_cast<int32>(HUDType));
+		{
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("UpdateHUDByType called with unhandled HUDType: %d"),
+				static_cast<int32>(HUDType)
+			);
+
 			break;
+		}
 	}
 }
 
@@ -141,5 +160,6 @@ bool AVacancyPlayerCharacter::ValidateHUDWidget(UVacancyUserWidgetBase*& HUDWidg
 		UE_LOG(LogTemp, Warning, TEXT("ValidateHUDWidget failed: HUDWidget: %s is not valid."), *GetNameSafe(HUDWidget));
 		return false;
 	}
+	
 	return true;
 }

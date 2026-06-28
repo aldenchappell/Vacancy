@@ -11,7 +11,14 @@ class AVacancyPlayerCharacter;
 class UBaseVacancyClue;
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnObjectiveStateChanged, const FName&, ObjectiveID, AVacancyPlayerCharacter*, PlayerCharacter);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
+	FOnObjectiveStateChanged,
+	EVacancyCaseObjectiveStatus, NewState,
+	const FName&, ObjectiveID,
+	const AVacancyPlayerCharacter*, PlayerCharacter
+);
+
+
 UCLASS()
 class THEAPARTMENT_API UBaseVacancyCaseObjective : public UObject
 {
@@ -23,7 +30,7 @@ public:
 
 	bool IsObjectiveActive(const int32 ObjectiveIndex) const;
 
-	static FName GetObjectiveID(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex);
+	static FName GetObjectiveID(const UBaseVacancyCaseObjective*& Objective, const int32 ObjectiveIndex);
 
 	UFUNCTION(BlueprintCallable, Category="Case Data")
 	FORCEINLINE TArray<FVacancyCaseObjectiveStateData> GetObjectives() const { return ObjectiveData.Objectives; }

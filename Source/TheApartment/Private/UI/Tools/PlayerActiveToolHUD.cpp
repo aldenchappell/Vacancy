@@ -2,3 +2,8 @@
 
 
 #include "UI/Tools/PlayerActiveToolHUD.h"
+
+void UPlayerActiveToolHUD::UpdateToolHUD()
+{
+	
+}

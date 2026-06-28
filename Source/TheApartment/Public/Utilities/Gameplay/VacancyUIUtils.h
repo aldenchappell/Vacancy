@@ -7,6 +7,7 @@
 #include "UI/VacancyHUDData.h"
 #include "VacancyUIUtils.generated.h"
 
+class AVacancyHUD;
 class AVacancyPlayerCharacter;
 class UVacancyUserWidgetBase;
 class UTextBlock;
