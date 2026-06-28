@@ -5,8 +5,8 @@
 
 #include "Systems/Investigation/Objectives/BaseVacancyCaseObjective.h"
 
-UBaseVacancyCaseObjective* UVacancyObjectiveUtils::SpawnObjective(UObject* WorldContextObject,
-	TSubclassOf<UBaseVacancyCaseObjective> ObjectiveClass)
+UBaseVacancyCaseObjective* UVacancyObjectiveUtils::SpawnObjective(const UObject* WorldContextObject,
+	const TSubclassOf<UBaseVacancyCaseObjective> ObjectiveClass)
 {
 	if (!IsValid(WorldContextObject))
 	{
@@ -57,8 +57,19 @@ UBaseVacancyCaseObjective* UVacancyObjectiveUtils::GetObjectiveByID(
 	
 	for (UBaseVacancyCaseObjective* Objective: Objectives)
 	{
-		const FName CurrentObjectiveID = Objective->GetObjectiveID(Objective->GetObjectiveData());
-		
+		if (!IsValid(Objective))	
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GetObjectiveByID: Encountered an invalid objective in the Objectives array."));
+			continue;
+		}
+
+		if (const FName CurrentObjectiveID =
+			Objective->GetObjectives().Num() > 0 ? Objective->GetObjectives()[0].ObjectiveID :
+			NAME_None; CurrentObjectiveID.IsNone())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GetObjectiveByID: Objective %s has no valid ObjectiveID."), *Objective->GetName());
+			continue;
+		}
 		
 		for (const FName& ID: ObjectiveIDs)
 		{
@@ -68,4 +79,66 @@ UBaseVacancyCaseObjective* UVacancyObjectiveUtils::GetObjectiveByID(
 			}
 		}
 	}
+
+	return nullptr;
+}
+
+bool UVacancyObjectiveUtils::IsObjectiveActive(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex, const FName& ObjectiveID)
+{
+	if (!IsValid(Objective))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("IsObjectiveActive called with an invalid Objective."));
+		return false;
+	}
+
+	if (ObjectiveID.IsNone())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("IsObjectiveActive called with an invalid ObjectiveID."));
+		return false;
+	}
+
+	const EVacancyCaseObjectiveStatus ObjectiveStatus =
+		GetObjectiveState(Objective, ObjectiveIndex, ObjectiveID);
+
+	return ObjectiveStatus == EVacancyCaseObjectiveStatus::InProgress;
+}
+
+bool UVacancyObjectiveUtils::IsObjectiveComplete(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex, const FName& ObjectiveID)
+{
+	if (!IsValid(Objective))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("IsObjectiveComplete called with an invalid Objective."));
+		return false;
+	}
+
+	if (ObjectiveID.IsNone())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("IsObjectiveComplete called with an invalid ObjectiveID."));
+		return false;
+	}
+
+	const EVacancyCaseObjectiveStatus ObjectiveStatus =
+		GetObjectiveState(Objective, ObjectiveIndex, ObjectiveID);
+
+	return ObjectiveStatus == EVacancyCaseObjectiveStatus::Completed;
+}
+
+EVacancyCaseObjectiveStatus UVacancyObjectiveUtils::GetObjectiveState(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex,
+	const FName& ObjectiveID)
+{
+	if (!IsValid(Objective))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetObjectiveState called with an invalid Objective."));
+		return EVacancyCaseObjectiveStatus::MAX;
+	}
+
+	if (ObjectiveID.IsNone())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetObjectiveState called with an invalid ObjectiveID."));
+		return EVacancyCaseObjectiveStatus::MAX;
+	}
+
+	return Objective->GetObjectives().Num() > 0 ?
+		Objective->GetObjectives()[ObjectiveIndex].ObjectiveStatus :
+		EVacancyCaseObjectiveStatus::MAX;
 }

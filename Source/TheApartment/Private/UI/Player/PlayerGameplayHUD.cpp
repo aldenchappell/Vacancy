@@ -3,7 +3,9 @@
 
 #include "UI/Player/PlayerGameplayHUD.h"
 
+#include "Characters/Player/VacancyPlayerCharacter.h"
 #include "UI/VacancyHUDData.h"
+#include "Utilities/Gameplay/VacancyUIUtils.h"
 
 void UPlayerGameplayHUD::NativeConstruct()
 {
@@ -48,4 +50,15 @@ void UPlayerGameplayHUD::InitializeHUDWidgets()
 		const bool bAutoShowWidget = NewWidget->GetWidgetData().bAutoShowWidgetOnConstruction;
 		NewWidget->SetVisibility(bAutoShowWidget ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 	}
+}
+
+UVacancyUserWidgetBase* UPlayerGameplayHUD::GetHUDWidgetByType(const EVacancyHUDType HUDType) const
+{
+	if (HUDType == EVacancyHUDType::None)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetHUDWidgetByType called with HUDType None."));
+		return nullptr;
+	}
+	
+	return UVacancyUIUtils::GetHUDElementByType(Cast<AVacancyPlayerCharacter>(GetOwningPlayerPawn()), HUDType);
 }

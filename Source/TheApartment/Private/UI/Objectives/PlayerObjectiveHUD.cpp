@@ -1,4 +1,4 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Systems/Investigation/Clues/BaseVacancyClueObjective.h"
+#include "UI/Objectives/PlayerObjectiveHUD.h"

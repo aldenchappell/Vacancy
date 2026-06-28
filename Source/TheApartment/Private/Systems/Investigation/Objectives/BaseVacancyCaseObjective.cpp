@@ -13,7 +13,7 @@ static TAutoConsoleVariable<bool> CVarEnableObjectiveLogging(
 
 void UBaseVacancyCaseObjective::OnObjectiveInitialized_Implementation()
 {
-	
+	OnObjectiveStateChanged.AddDynamic(this, &UBaseVacancyCaseObjective::HandleEnterObjectiveState);
 }
 
 void UBaseVacancyCaseObjective::InitializeObjective()
@@ -26,8 +26,7 @@ bool UBaseVacancyCaseObjective::IsObjectiveActive(const int32 ObjectiveIndex) co
 	return !ObjectiveData.Objectives[ObjectiveIndex].bIsObjectiveCompleted;
 }
 
-
-FName UBaseVacancyCaseObjective::GetObjectiveID(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex)
+FName UBaseVacancyCaseObjective::GetObjectiveID(const UBaseVacancyCaseObjective*& Objective, const int32 ObjectiveIndex)
 {
 	if (!IsValid(Objective))
 	{
@@ -35,9 +34,11 @@ FName UBaseVacancyCaseObjective::GetObjectiveID(const UBaseVacancyCaseObjective*
 		return NAME_None;
 	}
 
-	if (Objective->GetObjectives().Num == nullptr)
+	if (Objective->GetObjectives().Num() <= ObjectiveIndex)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GetObjectiveID called with Objective that has no objectives."));
+		UE_LOG(LogTemp, Warning,
+			TEXT("GetObjectiveID: ObjectiveIndex %d is out of bounds for Objective with ID %s."),
+			ObjectiveIndex, *Objective->GetObjectives()[0].ObjectiveID.ToString());
 		return NAME_None;
 	}
 	
@@ -96,6 +97,8 @@ void UBaseVacancyCaseObjective::HandleEnterObjectiveState(EVacancyCaseObjectiveS
 			UE_LOG(LogTemp, Warning, TEXT("HandleEnterObjectiveState: Unhandled state %d for ObjectiveID %s."), static_cast<int32>(NewState), *ObjectiveID.ToString());
 			break;
 	}
+
+	OnObjectiveStateChanged.Broadcast(NewState, ObjectiveID, PlayerCharacter);
 }
 
 void UBaseVacancyCaseObjective::HandleEnterActiveState_Implementation()
@@ -126,5 +129,3 @@ bool UBaseVacancyCaseObjective::DebugObjectiveState()
 {
 	return CVarEnableObjectiveLogging.GetValueOnGameThread();
 }
-
-

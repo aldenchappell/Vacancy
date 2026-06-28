@@ -7,6 +7,9 @@
 #include "UI/VacancyUserWidgetBase.h"
 #include "PlayerGameplayHUD.generated.h"
 
+class UPlayerObjectiveHUD;
+class UPlayerToolHUDSuite;
+class UPlayerCaseInventoryHUD;
 class UPlayerActiveToolHUD;
 /**
  * 
@@ -25,11 +28,16 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
+	/*
+	 * HUD Widgets to Initialize
+	 * UPlayerActiveToolHUD
+	 * UPlayerToolHUDSuite
+	 * UPlayerCaseInventoryHUD
+	 * UPlayerObjectiveHUD
+	 */
 	UPROPERTY(EditDefaultsOnly, Category="HUD|Widgets")
 	TArray<TSubclassOf<UUserWidget>> HUDWidgetsToInitialize;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="HUD")
-	TSubclassOf<UPlayerActiveToolHUD> ActiveToolHUDClass;
+	
 private:
 
 	//Helper Functions
@@ -42,4 +50,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="HUD")
 	FORCEINLINE UPlayerActiveToolHUD* GetActiveToolHUD() const { return ActiveToolHUDInstance; }
+
+	UFUNCTION(BlueprintCallable, Category="HUD")
+	UVacancyUserWidgetBase* GetHUDWidgetByType(const EVacancyHUDType HUDType) const;
 };
