@@ -3,6 +3,7 @@
 
 #include "Components/Characters/Player/PlayerObjectiveComponent/PlayerObjectiveComponent.h"
 
+#include "Characters/Player/VacancyPlayerCharacter.h"
 #include "Systems/Investigation/Objectives/BaseVacancyCaseObjective.h"
 #include "Utilities/Objectives/VacancyObjectiveUtils.h"
 
@@ -18,142 +19,72 @@ void UPlayerObjectiveComponent::BeginPlay()
 	InitializePlayerObjectives();
 }
 
-bool UPlayerObjectiveComponent::AddActiveObjective(UBaseVacancyCaseObjective* NewObjective)
+void UPlayerObjectiveComponent::SetCurrentObjective(UBaseVacancyCaseObjective* NewObjective)
 {
 	if (!IsValid(NewObjective))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Attempted to add an invalid objective to PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
-		return false;
+		return;
 	}
+	
+	ActiveObjective = NewObjective;
+}
 
-	if (ActiveObjectives.Contains(NewObjective))
+void UPlayerObjectiveComponent::ClearActiveObjective()
+{
+	if (!IsValid(ActiveObjective))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Attempted to add an already active objective to PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("Attempted to clear an invalid active objective from PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
+		return;
+	}
+	
+	ActiveObjective = nullptr;
+}
+
+void UPlayerObjectiveComponent::SetActiveObjective(UBaseVacancyCaseObjective* NewObjective)
+{
+	if (!IsValid(NewObjective))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Attempted to set an invalid active objective on PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
+		return;
+	}
+
+	ActiveObjective = NewObjective;
+}
+
+bool UPlayerObjectiveComponent::TryCompleteActiveObjective() const
+{
+	if (!IsValid(ActiveObjective))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TryCompleteActiveObjective called with no active objective on PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
 		return false;
 	}
 
-	ActiveObjectives.Add(NewObjective);
+	ActiveObjective->MarkObjectiveAsCompleted(Cast<AVacancyPlayerCharacter>(GetOwner()));
 	return true;
 }
 
-bool UPlayerObjectiveComponent::RemoveActiveObjective(UBaseVacancyCaseObjective* ObjectiveToRemove)
+bool UPlayerObjectiveComponent::TryFailActiveObjective(const FString& FailReason) const
 {
-	if (!IsValid(ObjectiveToRemove))
+	if (!IsValid(ActiveObjective))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Attempted to remove an invalid objective from PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("TryFailActiveObjective called with no active objective on PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
 		return false;
 	}
 
-	if (!ActiveObjectives.Contains(ObjectiveToRemove))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Attempted to remove a non-active objective from PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
-		return false;
-	}
-
-	return ActiveObjectives.Remove(ObjectiveToRemove) > 0;
+	ActiveObjective->MarkObjectiveAsFailed(Cast<AVacancyPlayerCharacter>(GetOwner()), FailReason);
+	return true;
 }
 
-bool UPlayerObjectiveComponent::TryBeginObjectiveByID(const FName& ObjectiveID) const
+UBaseVacancyCaseObjective* UPlayerObjectiveComponent::GetActiveObjective() const
 {
-	if (ObjectiveID.IsNone())
+	if (!IsValid(ActiveObjective))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("TryBeginObjectiveByID called with an invalid ObjectiveID on PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
-		return false;
+		UE_LOG(LogTemp, Warning, TEXT("No active objective found for PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
+		return nullptr;
 	}
 
-	if (UBaseVacancyCaseObjective* ObjectiveToStart = UVacancyObjectiveUtils::GetObjectiveByID(ActiveObjectives, ObjectiveID))
-	{
-		if (ObjectiveToStart->SetObjectiveState(ObjectiveID, EVacancyCaseObjectiveStatus::InProgress))
-		{
-			return true;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Failed to set objective state to Active for ObjectiveID: %s on PlayerObjectiveComponent on %s"), *ObjectiveID.ToString(), *GetOwner()->GetName());
-			return false;
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No active objective found with ObjectiveID: %s on PlayerObjectiveComponent on %s"), *ObjectiveID.ToString(), *GetOwner()->GetName());
-		return false;
-	}
-}
-
-bool UPlayerObjectiveComponent::TryCompleteObjectiveByID(const FName& ObjectiveID) const
-{
-	if (ObjectiveID.IsNone())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("TryCompleteObjectiveByID called with an invalid ObjectiveID on PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
-		return false;
-	}
-
-	if (UBaseVacancyCaseObjective* ObjectiveToComplete = UVacancyObjectiveUtils::GetObjectiveByID(ActiveObjectives, ObjectiveID))
-	{
-		
-
-		
-		if (ObjectiveToComplete->SetObjectiveState(ObjectiveID, EVacancyCaseObjectiveStatus::Completed))
-		{
-			return true;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Failed to set objective state to Completed for ObjectiveID: %s on PlayerObjectiveComponent on %s"), *ObjectiveID.ToString(), *GetOwner()->GetName());
-			return false;
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No active objective found with ObjectiveID: %s on PlayerObjectiveComponent on %s"), *ObjectiveID.ToString(), *GetOwner()->GetName());
-		return false;
-	}
-}
-
-bool UPlayerObjectiveComponent::TryFailObjectiveByID(const FName& ObjectiveID, const FString& FailReason) const
-{
-	if (ObjectiveID.IsNone())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("TryFailObjectiveByID called with an invalid ObjectiveID on PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
-		return false;
-	}
-
-	if (UBaseVacancyCaseObjective* ObjectiveToFail = UVacancyObjectiveUtils::GetObjectiveByID(ActiveObjectives, ObjectiveID))
-	{
-		if (ObjectiveToFail->SetObjectiveState(ObjectiveID, EVacancyCaseObjectiveStatus::Failed))
-		{
-			return true;
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Failed to set objective state to Failed for ObjectiveID: %s on PlayerObjectiveComponent on %s"), *ObjectiveID.ToString(), *GetOwner()->GetName());
-			return false;
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No active objective found with ObjectiveID: %s on PlayerObjectiveComponent on %s"), *ObjectiveID.ToString(), *GetOwner()->GetName());
-		return false;
-	}
-}
-
-TArray<UBaseVacancyCaseObjective*> UPlayerObjectiveComponent::GetActiveObjectives() const
-{
-	if (ActiveObjectives.Num() == 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No active objectives found for PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
-	}
-
-	for (const UBaseVacancyCaseObjective* Objective : ActiveObjectives)
-	{
-		if (IsValid(Objective) && UVacancyObjectiveUtils::IsObjectiveActive(Objective, 0, Objective->GetObjectives()[0].ObjectiveID))
-		{
-			return ActiveObjectives;
-		}
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("No active objectives found for PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
-	return TArray<UBaseVacancyCaseObjective*>();
+	return ActiveObjective;
 }
 
 TArray<UBaseVacancyCaseObjective*> UPlayerObjectiveComponent::GetCompletedObjectives() const
@@ -161,18 +92,30 @@ TArray<UBaseVacancyCaseObjective*> UPlayerObjectiveComponent::GetCompletedObject
 	if (CompletedObjectives.Num() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No completed objectives found for PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
+		return TArray<UBaseVacancyCaseObjective*>();
 	}
 
-	for (const UBaseVacancyCaseObjective* Objective : ActiveObjectives)
+	for (int i = 0; i < CompletedObjectives.Num(); ++i)
 	{
-		if (IsValid(Objective) && UVacancyObjectiveUtils::IsObjectiveComplete(Objective, 0, Objective->GetObjectives()[0].ObjectiveID))
+		const int32 ObjectiveIndex = i;
+		UBaseVacancyCaseObjective* CompletedObjective = CompletedObjectives[ObjectiveIndex];
+		
+		if (!IsValid(CompletedObjective))
 		{
-			return CompletedObjectives;
+			UE_LOG(LogTemp, Warning, TEXT("Encountered an invalid completed objective in PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
+			continue;
+		}
+		
+		if (!CompletedObjective->IsObjectiveCompleted())
+		{
+			UE_LOG(LogTemp, Warning,
+				TEXT("Objective %s in CompletedObjectives is not marked as completed on PlayerObjectiveComponent on %s"),
+				*CompletedObjective->GetName(), *GetOwner()->GetName());
+			return TArray<UBaseVacancyCaseObjective*>();
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("No completed objectives found for PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
-	return TArray<UBaseVacancyCaseObjective*>();
+	return CompletedObjectives;
 }
 
 void UPlayerObjectiveComponent::InitializePlayerObjectives()
@@ -193,4 +136,27 @@ void UPlayerObjectiveComponent::InitializePlayerObjectives()
 
 		UVacancyObjectiveUtils::SpawnObjective(this, ObjectiveClass);
 	}
+}
+
+bool UPlayerObjectiveComponent::IsObjectiveComplete(const UBaseVacancyCaseObjective* Objective) const
+{
+	if (!IsValid(Objective))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("IsObjectiveComplete called with an invalid Objective on PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
+		return false;
+	}
+
+	for (int i = 0; i < Objective->GetObjectivesStateData().Num(); ++i)
+	{
+		const int32 ObjectiveIndex = i;
+
+		if (const FName ObjectiveID =
+			UVacancyObjectiveUtils::GetObjectiveID(Objective, ObjectiveIndex);
+			!UVacancyObjectiveUtils::IsObjectiveComplete(Objective, ObjectiveIndex, ObjectiveID))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }

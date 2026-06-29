@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Systems/Investigation/Objectives/BaseVacancyCaseObjective.h"
 #include "PlayerObjectiveComponent.generated.h"
 
 
@@ -17,20 +18,19 @@ class THEAPARTMENT_API UPlayerObjectiveComponent : public UActorComponent
 public:
 	UPlayerObjectiveComponent();
 
-	bool AddActiveObjective(UBaseVacancyCaseObjective* NewObjective);
-	bool RemoveActiveObjective(UBaseVacancyCaseObjective* ObjectiveToRemove);
+	void SetCurrentObjective(UBaseVacancyCaseObjective* NewObjective);
+	void ClearActiveObjective();
+
+	void SetActiveObjective(UBaseVacancyCaseObjective* NewObjective);
 
 	UFUNCTION(BlueprintCallable, Category="Objectives")
-	bool TryBeginObjectiveByID(const FName& ObjectiveID) const;
+	bool TryCompleteActiveObjective() const;
 
 	UFUNCTION(BlueprintCallable, Category="Objectives")
-	bool TryCompleteObjectiveByID(const FName& ObjectiveID) const;
-
-	UFUNCTION(BlueprintCallable, Category="Objectives")
-	bool TryFailObjectiveByID(const FName& ObjectiveID, const FString& FailReason) const;
+	bool TryFailActiveObjective(const FString& FailReason) const;
 	
 	UFUNCTION(BlueprintCallable, Category="Objectives")
-	TArray<UBaseVacancyCaseObjective*> GetActiveObjectives() const;
+	UBaseVacancyCaseObjective* GetActiveObjective() const;
 
 	UFUNCTION(BlueprintCallable, Category="Objectives")
 	TArray<UBaseVacancyCaseObjective*> GetCompletedObjectives() const;
@@ -44,12 +44,12 @@ protected:
 
 	
 private:
-
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Objectives", meta=(AllowPrivateAccess="true"))
-	TArray<UBaseVacancyCaseObjective*> ActiveObjectives;
+	UBaseVacancyCaseObjective* ActiveObjective;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Objectives", meta=(AllowPrivateAccess="true"))
 	TArray<UBaseVacancyCaseObjective*> CompletedObjectives;
 
-	bool IsObjectiveComplete() const;
+	bool IsObjectiveComplete(const UBaseVacancyCaseObjective* Objective) const;
 };

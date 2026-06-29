@@ -3,10 +3,13 @@
 
 #include "Utilities/Objectives/VacancyObjectiveUtils.h"
 
+#include "Characters/Player/VacancyPlayerCharacter.h"
+#include "Components/Characters/Player/PlayerObjectiveComponent/PlayerObjectiveComponent.h"
 #include "Systems/Investigation/Objectives/BaseVacancyCaseObjective.h"
+#include "Utilities/Gameplay/VacancyPlayerUtils.h"
 
 UBaseVacancyCaseObjective* UVacancyObjectiveUtils::SpawnObjective(const UObject* WorldContextObject,
-	const TSubclassOf<UBaseVacancyCaseObjective> ObjectiveClass)
+                                                                  const TSubclassOf<UBaseVacancyCaseObjective> ObjectiveClass)
 {
 	if (!IsValid(WorldContextObject))
 	{
@@ -64,7 +67,7 @@ UBaseVacancyCaseObjective* UVacancyObjectiveUtils::GetObjectiveByID(
 		}
 
 		if (const FName CurrentObjectiveID =
-			Objective->GetObjectives().Num() > 0 ? Objective->GetObjectives()[0].ObjectiveID :
+			Objective->GetObjectivesStateData().Num() > 0 ? Objective->GetObjectiveID() :
 			NAME_None; CurrentObjectiveID.IsNone())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("GetObjectiveByID: Objective %s has no valid ObjectiveID."), *Objective->GetName());
@@ -81,6 +84,84 @@ UBaseVacancyCaseObjective* UVacancyObjectiveUtils::GetObjectiveByID(
 	}
 
 	return nullptr;
+}
+
+FName UVacancyObjectiveUtils::GetObjectiveID(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex)
+{
+	if (!IsValid(Objective))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetObjectiveID called with an invalid Objective."));
+		return NAME_None;
+	}
+
+	if (Objective->GetObjectivesStateData().Num() <= ObjectiveIndex)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("GetObjectiveID: ObjectiveIndex %d is out of bounds for Objective with ID %s."),
+			ObjectiveIndex, *Objective->GetObjectiveID().ToString());
+		return NAME_None;
+	}
+
+	return Objective->GetObjectiveID();
+}
+
+bool UVacancyObjectiveUtils::TryActivateObjectiveByID(UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex,
+	const FName& ObjectiveID, const AVacancyPlayerCharacter* PlayerCharacter)
+{
+	if (!IsValid(Objective))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TryActivateObjectiveByID called with an invalid Objective."));
+		return false;
+	}
+
+	if (ObjectiveID.IsNone())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TryActivateObjectiveByID called with an invalid ObjectiveID."));
+		return false;
+	}
+
+	if (!IsValid(PlayerCharacter))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TryActivateObjectiveByID called with an invalid PlayerCharacter."));
+		return false;
+	}
+
+	if (const FName CurrentObjectiveID = GetObjectiveID(Objective, ObjectiveIndex);
+		CurrentObjectiveID != ObjectiveID)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("TryActivateObjectiveByID: ObjectiveID %s does not match the current objective's ID %s."),
+			*ObjectiveID.ToString(), *CurrentObjectiveID.ToString());
+		return false;
+	}
+
+	if (IsObjectiveActive(Objective, ObjectiveIndex, ObjectiveID))
+	{
+		return true; // Already active
+	}
+
+	if (const EVacancyCaseObjectiveStatus CurrentStatus = GetObjectiveState(Objective, ObjectiveIndex, ObjectiveID);
+		CurrentStatus == EVacancyCaseObjectiveStatus::Completed)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("TryActivateObjectiveByID: Objective %s is already completed and cannot be activated."),
+			*Objective->GetName());
+		return false;
+	}
+
+	UPlayerObjectiveComponent* PlayerObjectiveComponent =
+		UVacancyPlayerUtils::GetPlayerComponent<UPlayerObjectiveComponent>(PlayerCharacter);
+	
+	if (!IsValid(PlayerObjectiveComponent))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("TryActivateObjectiveByID: PlayerCharacter %s does not have a valid PlayerObjectiveComponent."), *PlayerCharacter->GetName());
+		return false;
+	}
+
+	PlayerObjectiveComponent->SetActiveObjective(Objective);
+
+	Objective->MarkObjectiveAsActive(PlayerCharacter);
+	return true;
 }
 
 bool UVacancyObjectiveUtils::IsObjectiveActive(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex, const FName& ObjectiveID)
@@ -100,7 +181,7 @@ bool UVacancyObjectiveUtils::IsObjectiveActive(const UBaseVacancyCaseObjective* 
 	const EVacancyCaseObjectiveStatus ObjectiveStatus =
 		GetObjectiveState(Objective, ObjectiveIndex, ObjectiveID);
 
-	return ObjectiveStatus == EVacancyCaseObjectiveStatus::InProgress;
+	return ObjectiveStatus == EVacancyCaseObjectiveStatus::Active;
 }
 
 bool UVacancyObjectiveUtils::IsObjectiveComplete(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex, const FName& ObjectiveID)
@@ -138,7 +219,7 @@ EVacancyCaseObjectiveStatus UVacancyObjectiveUtils::GetObjectiveState(const UBas
 		return EVacancyCaseObjectiveStatus::MAX;
 	}
 
-	return Objective->GetObjectives().Num() > 0 ?
-		Objective->GetObjectives()[ObjectiveIndex].ObjectiveStatus :
+	return Objective->GetObjectivesStateData().Num() > 0 ?
+		Objective->GetObjectiveStatus() :
 		EVacancyCaseObjectiveStatus::MAX;
 }
