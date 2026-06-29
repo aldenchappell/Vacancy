@@ -128,7 +128,7 @@ struct FVacancyCaseFileData
 UENUM(BlueprintType)
 enum class EVacancyCaseObjectiveStatus : uint8
 {
-	InProgress,
+	Active,
 	Completed,
 	Failed,
 	MAX
@@ -138,12 +138,6 @@ USTRUCT(BlueprintType)
 struct FVacancyCaseObjectiveStateData
 {
 	GENERATED_BODY()
-
-	/*
-	 * Unique identifier for the objective, used to track progress and completion status
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
-	FName ObjectiveID = NAME_None;
 
 	/*
 	 * Display text for the objective, used to show the player what they need to do
@@ -156,18 +150,6 @@ struct FVacancyCaseObjectiveStateData
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
 	bool bIsOptional = false;
-
-	/*
-	 * Whether the objective has been completed by the player
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
-	bool bIsObjectiveCompleted = false;
-
-	/*
-	 * Status of the objective, used to determine if the objective is in progress, completed, or failed
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
-	EVacancyCaseObjectiveStatus ObjectiveStatus = EVacancyCaseObjectiveStatus::MAX;
 };
 
 USTRUCT(BlueprintType)
@@ -176,10 +158,23 @@ struct FVacancyCaseObjectiveData
 	GENERATED_BODY()
 
 	/*
+	 * Unique identifier for the objective, used to track progress and completion status
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
+	FName ObjectiveID = NAME_None;
+
+	/*
 	 * Gameplay tag for the objective, used to categorize and filter objectives in the game
+	 * Will also be used to determine which objectives are displayed in the player's HUD compass
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
 	FGameplayTag ObjectiveTag;
+
+	/*
+	 * Whether or not the objective will be displayed in the player's HUD compass
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
+	bool bIsObjectiveDisplayedInHUD = false;
 	
 	/*
 	 * Data for the objective, including its ID, display text, and completion status

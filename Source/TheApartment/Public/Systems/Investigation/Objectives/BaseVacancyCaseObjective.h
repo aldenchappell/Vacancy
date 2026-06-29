@@ -11,13 +11,13 @@ class AVacancyPlayerCharacter;
 class UBaseVacancyClue;
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FOnObjectiveStateChanged,
 	EVacancyCaseObjectiveStatus, NewState,
-	const FName&, ObjectiveID,
 	const AVacancyPlayerCharacter*, PlayerCharacter
 );
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnObjectiveCompleted);
 
 UCLASS()
 class THEAPARTMENT_API UBaseVacancyCaseObjective : public UObject
@@ -28,19 +28,35 @@ public:
 
 	void InitializeObjective();
 
-	bool IsObjectiveActive(const int32 ObjectiveIndex) const;
+	bool IsObjectiveActive() const;
+	bool IsObjectiveCompleted() const;
 
-	static FName GetObjectiveID(const UBaseVacancyCaseObjective*& Objective, const int32 ObjectiveIndex);
+	FName GetObjectiveID() const;
+
+	void SetObjectiveStatus(const EVacancyCaseObjectiveStatus NewStatus, const AVacancyPlayerCharacter* PlayerCharacter);
+	FORCEINLINE EVacancyCaseObjectiveStatus GetObjectiveStatus() const { return ObjectiveStatus; }
+	
+	void MarkObjectiveAsActive(const AVacancyPlayerCharacter* PlayerCharacter);
+	void MarkObjectiveAsCompleted(const AVacancyPlayerCharacter* PlayerCharacter);
+	void MarkObjectiveAsFailed(const AVacancyPlayerCharacter* PlayerCharacter, const FString& FailReason);
+	
+	UFUNCTION(BlueprintCallable, Category="Case Data")
+	bool ShouldDisplayObjective() const;
+	
+	UFUNCTION(BlueprintCallable, Category="Case Data")
+	FORCEINLINE TArray<FVacancyCaseObjectiveStateData> GetObjectivesStateData() const { return ObjectiveData.Objectives; }
 
 	UFUNCTION(BlueprintCallable, Category="Case Data")
-	FORCEINLINE TArray<FVacancyCaseObjectiveStateData> GetObjectives() const { return ObjectiveData.Objectives; }
-
+	FVacancyCaseObjectiveStateData GetObjectiveAtIndex(const int32 ObjectiveIndex) const;
+	
 	UFUNCTION(BlueprintCallable, Category="Case Data")
 	bool SetObjectiveState(const FName& ObjectiveID, const EVacancyCaseObjectiveStatus NewState);
 	
 	UPROPERTY(BlueprintAssignable, Category="Case Data")
 	FOnObjectiveStateChanged OnObjectiveStateChanged;
 
+	UPROPERTY(BlueprintAssignable, Category="Case Data")
+	FOnObjectiveCompleted OnObjectiveCompleted;
 	
 protected:
 
@@ -50,19 +66,33 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Case Data")
 	FVacancyCaseObjectiveData ObjectiveData;
 
+	/*
+	* Whether the objective has been completed by the player
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
+	bool bIsObjectiveCompleted = false;
+	
 	UFUNCTION(BlueprintNativeEvent, Category="Case Data")
 	void HandleEnterActiveState();
 	UFUNCTION(BlueprintNativeEvent, Category="Case Data")
 	void HandleEnterCompletedState();
 	UFUNCTION(BlueprintNativeEvent, Category="Case Data")
 	void HandleEnterFailedState();
+
 	
 private:
 
 	UFUNCTION()
-	void HandleEnterObjectiveState(EVacancyCaseObjectiveStatus NewState, const FName& ObjectiveID, const AVacancyPlayerCharacter* PlayerCharacter);
+	void HandleEnterObjectiveState(EVacancyCaseObjectiveStatus NewState, const AVacancyPlayerCharacter* PlayerCharacter);
 
 	static bool DebugObjectiveState();
+
+	/*
+	 * Status of the objective, used to determine if the objective is in progress, completed, or failed
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Objective Data", meta=(AllowPrivateAccess="true"))
+	EVacancyCaseObjectiveStatus ObjectiveStatus = EVacancyCaseObjectiveStatus::MAX;
+	
 public:
 
 	UFUNCTION(BlueprintCallable, Category="Case Data")

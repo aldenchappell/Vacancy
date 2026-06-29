@@ -21,38 +21,107 @@ void UBaseVacancyCaseObjective::InitializeObjective()
 	OnObjectiveInitialized();
 }
 
-bool UBaseVacancyCaseObjective::IsObjectiveActive(const int32 ObjectiveIndex) const
+bool UBaseVacancyCaseObjective::IsObjectiveActive() const
 {
-	return !ObjectiveData.Objectives[ObjectiveIndex].bIsObjectiveCompleted;
+	return !bIsObjectiveCompleted;
 }
 
-FName UBaseVacancyCaseObjective::GetObjectiveID(const UBaseVacancyCaseObjective*& Objective, const int32 ObjectiveIndex)
+bool UBaseVacancyCaseObjective::IsObjectiveCompleted() const
 {
-	if (!IsValid(Objective))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GetObjectiveID called with null Objective."));
-		return NAME_None;
-	}
+	return bIsObjectiveCompleted;
+}
 
-	if (Objective->GetObjectives().Num() <= ObjectiveIndex)
+FName UBaseVacancyCaseObjective::GetObjectiveID() const
+{
+	if (ObjectiveData.ObjectiveID.IsNone())
 	{
-		UE_LOG(LogTemp, Warning,
-			TEXT("GetObjectiveID: ObjectiveIndex %d is out of bounds for Objective with ID %s."),
-			ObjectiveIndex, *Objective->GetObjectives()[0].ObjectiveID.ToString());
-		return NAME_None;
+		UE_LOG(LogTemp, Warning, TEXT("GetObjectiveID: ObjectiveID is None for Objective."));
+		return FName("InvalidObjectiveID");
 	}
 	
-	return Objective->GetObjectives()[ObjectiveIndex].ObjectiveID;
+	return ObjectiveData.ObjectiveID;
+}
+
+void UBaseVacancyCaseObjective::SetObjectiveStatus(const EVacancyCaseObjectiveStatus NewStatus, const AVacancyPlayerCharacter* PlayerCharacter)
+{
+	if (!IsValid(PlayerCharacter))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetObjectiveStatus called with null PlayerCharacter."));
+		return;
+	}
+	
+	if (NewStatus == EVacancyCaseObjectiveStatus::MAX)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetObjectiveStatus: Invalid NewStatus for Objective: %s."), *ObjectiveData.ObjectiveID.ToString());
+		return;
+	}
+
+	ObjectiveStatus = NewStatus;
+	OnObjectiveStateChanged.Broadcast(NewStatus, nullptr);
+}
+
+void UBaseVacancyCaseObjective::MarkObjectiveAsActive(const AVacancyPlayerCharacter* PlayerCharacter)
+{
+	if (!IsValid(PlayerCharacter))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MarkObjectiveAsActive called with null PlayerCharacter."));
+		return;
+	}
+
+	SetObjectiveStatus(EVacancyCaseObjectiveStatus::Active, PlayerCharacter);
+}
+
+void UBaseVacancyCaseObjective::MarkObjectiveAsCompleted(const AVacancyPlayerCharacter* PlayerCharacter)
+{
+	if (!IsValid(PlayerCharacter))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MarkObjectiveAsCompleted called with null PlayerCharacter."));
+		return;
+	}
+
+	SetObjectiveStatus(EVacancyCaseObjectiveStatus::Completed, PlayerCharacter);
+}
+
+void UBaseVacancyCaseObjective::MarkObjectiveAsFailed(const AVacancyPlayerCharacter* PlayerCharacter, const FString& FailReason)
+{
+	if (!IsValid(PlayerCharacter))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MarkObjectiveAsFailed called with null PlayerCharacter."));
+		return;
+	}
+
+	SetObjectiveStatus(EVacancyCaseObjectiveStatus::Failed, PlayerCharacter);
+}
+
+
+bool UBaseVacancyCaseObjective::ShouldDisplayObjective() const
+{
+	//also, we're only going to display objectives that are NOT completed.
+	return ObjectiveData.bIsObjectiveDisplayedInHUD && !bIsObjectiveCompleted;
+}
+
+FVacancyCaseObjectiveStateData UBaseVacancyCaseObjective::GetObjectiveAtIndex(const int32 ObjectiveIndex) const
+{
+	if (ObjectiveData.Objectives.Num() <= ObjectiveIndex)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("GetObjectiveAtIndex: ObjectiveIndex %d is out of bounds for Objective with ID %s."),
+			ObjectiveIndex, *ObjectiveData.ObjectiveID.ToString());
+		return FVacancyCaseObjectiveStateData();
+	}
+
+	return ObjectiveData.Objectives[ObjectiveIndex];
 }
 
 bool UBaseVacancyCaseObjective::SetObjectiveState(const FName& ObjectiveID, const EVacancyCaseObjectiveStatus NewState)
 {
 	for (FVacancyCaseObjectiveStateData& ObjectiveState : ObjectiveData.Objectives)
 	{
-		if (ObjectiveState.ObjectiveID == ObjectiveID)
+		if (ObjectiveData.ObjectiveID == ObjectiveID)
 		{
-			ObjectiveState.ObjectiveStatus = NewState;
-			ObjectiveState.bIsObjectiveCompleted = (NewState == EVacancyCaseObjectiveStatus::Completed);
+			ObjectiveStatus = NewState;
+			bIsObjectiveCompleted = (NewState == EVacancyCaseObjectiveStatus::Completed);
+			OnObjectiveCompleted.Broadcast();
 			return true;
 		}
 	}
@@ -62,29 +131,23 @@ bool UBaseVacancyCaseObjective::SetObjectiveState(const FName& ObjectiveID, cons
 }
 
 void UBaseVacancyCaseObjective::HandleEnterObjectiveState(EVacancyCaseObjectiveStatus NewState,
-	const FName& ObjectiveID, const AVacancyPlayerCharacter* PlayerCharacter)
+const AVacancyPlayerCharacter* PlayerCharacter)
 {
 	if (NewState == EVacancyCaseObjectiveStatus::MAX)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("HandleEnterObjectiveState: Invalid state 'MAX' for ObjectiveID %s."), *ObjectiveID.ToString());
-		return;
-	}
-
-	if (!ObjectiveID.IsValid())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("HandleEnterObjectiveState: Invalid ObjectiveID for state change to %d."), static_cast<int32>(NewState));
+		UE_LOG(LogTemp, Warning, TEXT("HandleEnterObjectiveState: Invalid NewState for Objective: %s."), *ObjectiveData.ObjectiveID.ToString());
 		return;
 	}
 
 	if (!IsValid(PlayerCharacter))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("HandleEnterObjectiveState: Invalid PlayerCharacter for ObjectiveID %s."), *ObjectiveID.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("HandleEnterObjectiveState: Invalid PlayerCharacter for ObjectiveID %s."), *ObjectiveData.ObjectiveID.ToString());
 		return;
 	}
 
 	switch (NewState)
 	{
-		case EVacancyCaseObjectiveStatus::InProgress:
+		case EVacancyCaseObjectiveStatus::Active:
 			HandleEnterActiveState();
 			break;
 		case EVacancyCaseObjectiveStatus::Completed:
@@ -94,18 +157,18 @@ void UBaseVacancyCaseObjective::HandleEnterObjectiveState(EVacancyCaseObjectiveS
 			HandleEnterFailedState();
 			break;
 		default:
-			UE_LOG(LogTemp, Warning, TEXT("HandleEnterObjectiveState: Unhandled state %d for ObjectiveID %s."), static_cast<int32>(NewState), *ObjectiveID.ToString());
+			UE_LOG(LogTemp, Warning, TEXT("HandleEnterObjectiveState: Unhandled state %d for ObjectiveID %s."), static_cast<int32>(NewState), *ObjectiveData.ObjectiveID.ToString());
 			break;
 	}
 
-	OnObjectiveStateChanged.Broadcast(NewState, ObjectiveID, PlayerCharacter);
+	OnObjectiveStateChanged.Broadcast(NewState, PlayerCharacter);
 }
 
 void UBaseVacancyCaseObjective::HandleEnterActiveState_Implementation()
 {
 	if (DebugObjectiveState())
 	{
-		UE_LOG(LogTemp, Log, TEXT("Objective is now active. ObjectiveID: %s"), *ObjectiveData.Objectives[0].ObjectiveID.ToString());
+		UE_LOG(LogTemp, Log, TEXT("Objective is now active. ObjectiveID: %s"), *ObjectiveData.ObjectiveID.ToString());
 	}
 }
 
@@ -113,7 +176,7 @@ void UBaseVacancyCaseObjective::HandleEnterCompletedState_Implementation()
 {
 	if (DebugObjectiveState())
 	{
-		UE_LOG(LogTemp, Log, TEXT("Objective completed. ObjectiveID: %s"), *ObjectiveData.Objectives[0].ObjectiveID.ToString());
+		UE_LOG(LogTemp, Log, TEXT("Objective completed. ObjectiveID: %s"), *ObjectiveData.ObjectiveID.ToString());
 	}
 }
 
@@ -121,7 +184,7 @@ void UBaseVacancyCaseObjective::HandleEnterFailedState_Implementation()
 {
 	if (DebugObjectiveState())
 	{
-		UE_LOG(LogTemp, Log, TEXT("Objective failed. ObjectiveID: %s"), *ObjectiveData.Objectives[0].ObjectiveID.ToString());
+		UE_LOG(LogTemp, Log, TEXT("Objective failed. ObjectiveID: %s"), *ObjectiveData.ObjectiveID.ToString());
 	}
 }
 
