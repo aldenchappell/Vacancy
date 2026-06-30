@@ -12,7 +12,7 @@ class UBaseVacancyClue;
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-	FOnObjectiveStateChanged,
+	FOnObjectiveStatusChanged,
 	EVacancyCaseObjectiveStatus, NewState,
 	const AVacancyPlayerCharacter*, PlayerCharacter
 );
@@ -42,6 +42,8 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category="Case Data")
 	bool ShouldDisplayObjective() const;
+
+	bool IsPreviousObjectiveCompleted(const int32 PreviousObjectiveIndex) const;
 	
 	UFUNCTION(BlueprintCallable, Category="Case Data")
 	FORCEINLINE TArray<FVacancyCaseObjectiveStateData> GetObjectivesStateData() const { return ObjectiveData.Objectives; }
@@ -53,7 +55,7 @@ public:
 	bool SetObjectiveState(const FName& ObjectiveID, const EVacancyCaseObjectiveStatus NewState);
 	
 	UPROPERTY(BlueprintAssignable, Category="Case Data")
-	FOnObjectiveStateChanged OnObjectiveStateChanged;
+	FOnObjectiveStatusChanged OnObjectiveStatusChanged;
 
 	UPROPERTY(BlueprintAssignable, Category="Case Data")
 	FOnObjectiveCompleted OnObjectiveCompleted;
@@ -83,8 +85,10 @@ protected:
 private:
 
 	UFUNCTION()
-	void HandleEnterObjectiveState(EVacancyCaseObjectiveStatus NewState, const AVacancyPlayerCharacter* PlayerCharacter);
+	void HandleEnterObjectiveState(const EVacancyCaseObjectiveStatus NewState, const AVacancyPlayerCharacter* PlayerCharacter);
 
+	void SortObjectivesByProgressionIndex() const;
+	
 	static bool DebugObjectiveState();
 
 	/*
@@ -92,11 +96,15 @@ private:
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Objective Data", meta=(AllowPrivateAccess="true"))
 	EVacancyCaseObjectiveStatus ObjectiveStatus = EVacancyCaseObjectiveStatus::MAX;
+
 	
 public:
 
 	UFUNCTION(BlueprintCallable, Category="Case Data")
 	FORCEINLINE FVacancyCaseObjectiveData GetObjectiveData() const { return ObjectiveData; }
+
+	UFUNCTION(BlueprintCallable, Category="Case Data")
+	FORCEINLINE int32 GetObjectiveIndex() const { return ObjectiveData.ObjectiveIndex; }
 };
 
 

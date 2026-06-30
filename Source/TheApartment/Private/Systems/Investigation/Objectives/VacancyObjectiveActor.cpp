@@ -17,6 +17,17 @@ void AVacancyObjectiveActor::SetOwnerObjective(UBaseVacancyCaseObjective* NewOwn
 	OwnerObjective = NewOwnerObjective;
 }
 
+TSubclassOf<UBaseVacancyCaseObjective> AVacancyObjectiveActor::GetOwnerObjectiveClass() const
+{
+	if (!IsValid(OwnerObjective))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GetOwnerObjectiveClass: OwnerObjective is not valid for %s."), *GetName());
+		return nullptr;
+	}
+
+	return OwnerObjective->GetClass();
+}
+
 FVector AVacancyObjectiveActor::GetObjectiveLocation() const
 {
 	if (!IsValid(OwnerObjective))
@@ -33,4 +44,9 @@ FVector AVacancyObjectiveActor::GetObjectiveLocation() const
 	}
 
 	return GetActorLocation();
+}
+
+void AVacancyObjectiveActor::OnOwnerObjectiveSpawned(UBaseVacancyCaseObjective* SpawnedObjective)
+{
+	SpawnedObjective->InitializeObjective();
 }

@@ -24,7 +24,7 @@ public:
 	void SetActiveObjective(UBaseVacancyCaseObjective* NewObjective);
 
 	UFUNCTION(BlueprintCallable, Category="Objectives")
-	bool TryCompleteActiveObjective() const;
+	bool TryCompleteActiveObjective();
 
 	UFUNCTION(BlueprintCallable, Category="Objectives")
 	bool TryFailActiveObjective(const FString& FailReason) const;
@@ -34,7 +34,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Objectives")
 	TArray<UBaseVacancyCaseObjective*> GetCompletedObjectives() const;
+	
 protected:
+	
 	virtual void BeginPlay() override;
 
 	void InitializePlayerObjectives();
@@ -42,7 +44,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Objectives")
 	TArray<TSubclassOf<class UBaseVacancyCaseObjective>> DefaultObjectives;
 
-	
 private:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Objectives", meta=(AllowPrivateAccess="true"))

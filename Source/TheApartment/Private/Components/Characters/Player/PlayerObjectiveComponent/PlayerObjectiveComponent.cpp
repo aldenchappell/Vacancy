@@ -52,7 +52,7 @@ void UPlayerObjectiveComponent::SetActiveObjective(UBaseVacancyCaseObjective* Ne
 	ActiveObjective = NewObjective;
 }
 
-bool UPlayerObjectiveComponent::TryCompleteActiveObjective() const
+bool UPlayerObjectiveComponent::TryCompleteActiveObjective()
 {
 	if (!IsValid(ActiveObjective))
 	{
@@ -61,6 +61,7 @@ bool UPlayerObjectiveComponent::TryCompleteActiveObjective() const
 	}
 
 	ActiveObjective->MarkObjectiveAsCompleted(Cast<AVacancyPlayerCharacter>(GetOwner()));
+	CompletedObjectives.Add(ActiveObjective);
 	return true;
 }
 
@@ -98,7 +99,7 @@ TArray<UBaseVacancyCaseObjective*> UPlayerObjectiveComponent::GetCompletedObject
 	for (int i = 0; i < CompletedObjectives.Num(); ++i)
 	{
 		const int32 ObjectiveIndex = i;
-		UBaseVacancyCaseObjective* CompletedObjective = CompletedObjectives[ObjectiveIndex];
+		const UBaseVacancyCaseObjective* CompletedObjective = CompletedObjectives[ObjectiveIndex];
 		
 		if (!IsValid(CompletedObjective))
 		{

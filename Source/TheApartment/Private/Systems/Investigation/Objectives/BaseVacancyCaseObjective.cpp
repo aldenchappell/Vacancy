@@ -1,7 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Systems/Investigation/Objectives/BaseVacancyCaseObjective.h"
-
 #include "Characters/Player/VacancyPlayerCharacter.h"
 
 static TAutoConsoleVariable<bool> CVarEnableObjectiveLogging(
@@ -13,7 +12,7 @@ static TAutoConsoleVariable<bool> CVarEnableObjectiveLogging(
 
 void UBaseVacancyCaseObjective::OnObjectiveInitialized_Implementation()
 {
-	OnObjectiveStateChanged.AddDynamic(this, &UBaseVacancyCaseObjective::HandleEnterObjectiveState);
+	OnObjectiveStatusChanged.AddDynamic(this, &UBaseVacancyCaseObjective::HandleEnterObjectiveState);
 }
 
 void UBaseVacancyCaseObjective::InitializeObjective()
@@ -57,7 +56,7 @@ void UBaseVacancyCaseObjective::SetObjectiveStatus(const EVacancyCaseObjectiveSt
 	}
 
 	ObjectiveStatus = NewStatus;
-	OnObjectiveStateChanged.Broadcast(NewStatus, nullptr);
+	OnObjectiveStatusChanged.Broadcast(NewStatus, nullptr);
 }
 
 void UBaseVacancyCaseObjective::MarkObjectiveAsActive(const AVacancyPlayerCharacter* PlayerCharacter)
@@ -100,6 +99,20 @@ bool UBaseVacancyCaseObjective::ShouldDisplayObjective() const
 	return ObjectiveData.bIsObjectiveDisplayedInHUD && !bIsObjectiveCompleted;
 }
 
+bool UBaseVacancyCaseObjective::IsPreviousObjectiveCompleted(const int32 PreviousObjectiveIndex) const
+{
+	if (PreviousObjectiveIndex < 0 || PreviousObjectiveIndex >= ObjectiveData.Objectives.Num())
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("IsPreviousObjectiveCompleted: PreviousObjectiveIndex %d is out of bounds for Objective with ID %s."),
+			PreviousObjectiveIndex, *ObjectiveData.ObjectiveID.ToString());
+		return false;
+	}
+
+	const FVacancyCaseObjectiveStateData& PreviousObjective = ObjectiveData.Objectives[PreviousObjectiveIndex];
+	return PreviousObjective.bIsOptional || bIsObjectiveCompleted;
+}
+
 FVacancyCaseObjectiveStateData UBaseVacancyCaseObjective::GetObjectiveAtIndex(const int32 ObjectiveIndex) const
 {
 	if (ObjectiveData.Objectives.Num() <= ObjectiveIndex)
@@ -130,7 +143,7 @@ bool UBaseVacancyCaseObjective::SetObjectiveState(const FName& ObjectiveID, cons
 	return false;
 }
 
-void UBaseVacancyCaseObjective::HandleEnterObjectiveState(EVacancyCaseObjectiveStatus NewState,
+void UBaseVacancyCaseObjective::HandleEnterObjectiveState(const EVacancyCaseObjectiveStatus NewState,
 const AVacancyPlayerCharacter* PlayerCharacter)
 {
 	if (NewState == EVacancyCaseObjectiveStatus::MAX)
@@ -161,7 +174,19 @@ const AVacancyPlayerCharacter* PlayerCharacter)
 			break;
 	}
 
-	OnObjectiveStateChanged.Broadcast(NewState, PlayerCharacter);
+	OnObjectiveStatusChanged.Broadcast(NewState, PlayerCharacter);
+}
+
+void UBaseVacancyCaseObjective::SortObjectivesByProgressionIndex() const
+{
+	if (ObjectiveData.Objectives.Num() <= 1)
+	{
+		return; // No need to sort if there's 0 or 1 objective
+	}
+
+	//sort the objectives by their index in the case file, so that they are displayed in the correct order to the player.
+	TArray<FVacancyCaseObjectiveStateData> UnsortedObjectives = ObjectiveData.Objectives;
+	ObjectiveData.SortObjectivesByIndex(UnsortedObjectives);
 }
 
 void UBaseVacancyCaseObjective::HandleEnterActiveState_Implementation()

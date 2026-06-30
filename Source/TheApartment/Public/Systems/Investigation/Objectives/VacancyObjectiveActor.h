@@ -21,6 +21,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Objective")
 	UBaseVacancyCaseObjective* GetOwnerObjective() const { return OwnerObjective; }
 
+	TSubclassOf<UBaseVacancyCaseObjective> GetOwnerObjectiveClass() const;
+	
 	UFUNCTION(BlueprintCallable, Category="Objective")
 	FVector GetObjectiveLocation() const;
 

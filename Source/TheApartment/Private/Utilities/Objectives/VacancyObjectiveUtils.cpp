@@ -223,3 +223,22 @@ EVacancyCaseObjectiveStatus UVacancyObjectiveUtils::GetObjectiveState(const UBas
 		Objective->GetObjectiveStatus() :
 		EVacancyCaseObjectiveStatus::MAX;
 }
+
+TArray<FAssetData> UVacancyObjectiveUtils::LoadObjectiveDataAssets(const FString& AssetPath)
+{
+	if (AssetPath.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LoadObjectiveDataAssets called with an empty AssetPath."));
+		return TArray<FAssetData>();
+	}
+
+	if (const FSoftObjectPath SoftObjectPath(AssetPath); !SoftObjectPath.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LoadObjectiveDataAssets: Invalid SoftObjectPath for AssetPath: %s"), *AssetPath);
+		return TArray<FAssetData>();
+	}
+
+	
+	
+	return TArray<FAssetData>();
+}

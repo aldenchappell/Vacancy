@@ -71,7 +71,7 @@ protected:
 #pragma endregion
 
 private:
-	static bool ValidateHUDWidget(UVacancyUserWidgetBase*& HUDWidget);
+	static bool ValidateHUDWidget(const UVacancyUserWidgetBase* HUDWidget);
 	
 public:
 	

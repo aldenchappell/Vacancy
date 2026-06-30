@@ -26,4 +26,5 @@ public:
 	static bool IsObjectiveActive(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex, const FName& ObjectiveID);
 	static bool IsObjectiveComplete(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex, const FName& ObjectiveID);
 	static EVacancyCaseObjectiveStatus GetObjectiveState(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex, const FName& ObjectiveID);
+	static TArray<FAssetData> LoadObjectiveDataAssets(const FString& AssetPath);
 };

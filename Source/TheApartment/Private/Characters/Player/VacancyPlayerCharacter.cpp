@@ -153,7 +153,7 @@ void AVacancyPlayerCharacter::UpdateHUDByType(const EVacancyHUDType& HUDType) co
 	}
 }
 
-bool AVacancyPlayerCharacter::ValidateHUDWidget(UVacancyUserWidgetBase*& HUDWidget)
+bool AVacancyPlayerCharacter::ValidateHUDWidget(const UVacancyUserWidgetBase* HUDWidget)
 {
 	if (!IsValid(HUDWidget))
 	{
