@@ -18,6 +18,8 @@ public class TheApartment : ModuleRules
 			"NavigationSystem", 
 			"GameplayTags",
 			"EnhancedInput",
+			"AssetRegistry",
+			"Niagara",
 			
 			// UI dependencies
 			"UMG",

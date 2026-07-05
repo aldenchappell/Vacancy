@@ -62,7 +62,7 @@ void ABaseTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* Unequippi
 		{
 			if (IsValid(UnequippingCharacter))
 			{
-				UnequippingCharacter->UpdateHUDByType(EVacancyHUDType::ToolHUD);
+				UnequippingCharacter->UpdateHUDByType(EVacancyHUDElementType::ToolHUD);
 			}
 		},
 		MontageDuration,

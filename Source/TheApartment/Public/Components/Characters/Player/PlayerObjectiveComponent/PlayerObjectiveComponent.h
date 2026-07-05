@@ -10,6 +10,7 @@
 
 class UBaseVacancyCaseObjective;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActiveObjectiveChanged, UBaseVacancyCaseObjective*, NewActiveObjective);
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class THEAPARTMENT_API UPlayerObjectiveComponent : public UActorComponent
 {
@@ -24,7 +25,7 @@ public:
 	void SetActiveObjective(UBaseVacancyCaseObjective* NewObjective);
 
 	UFUNCTION(BlueprintCallable, Category="Objectives")
-	bool TryCompleteActiveObjective() const;
+	bool TryCompleteActiveObjective();
 
 	UFUNCTION(BlueprintCallable, Category="Objectives")
 	bool TryFailActiveObjective(const FString& FailReason) const;
@@ -34,7 +35,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Objectives")
 	TArray<UBaseVacancyCaseObjective*> GetCompletedObjectives() const;
+
+	UPROPERTY(BlueprintAssignable, Category="Objectives")
+	FOnActiveObjectiveChanged OnActiveObjectiveChanged;
 protected:
+	
 	virtual void BeginPlay() override;
 
 	void InitializePlayerObjectives();
@@ -42,11 +47,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Objectives")
 	TArray<TSubclassOf<class UBaseVacancyCaseObjective>> DefaultObjectives;
 
-	
+	bool QueueNextObjective();
 private:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Objectives", meta=(AllowPrivateAccess="true"))
 	UBaseVacancyCaseObjective* ActiveObjective;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Objectives", meta=(AllowPrivateAccess="true"))
+	TArray<UBaseVacancyCaseObjective*> QueuedObjectives;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Objectives", meta=(AllowPrivateAccess="true"))
 	TArray<UBaseVacancyCaseObjective*> CompletedObjectives;

@@ -20,10 +20,11 @@ class THEAPARTMENT_API UVacancyObjectiveUtils : public UBlueprintFunctionLibrary
 public:
 
 	static UBaseVacancyCaseObjective* SpawnObjective(const UObject* WorldContextObject, TSubclassOf<UBaseVacancyCaseObjective> ObjectiveClass);
-	static UBaseVacancyCaseObjective* GetObjectiveByID(const TArray<UBaseVacancyCaseObjective*>& Objectives, const FName& ObjectiveID);
+	static UBaseVacancyCaseObjective* GetObjectiveByID(const TArray<TObjectPtr<UBaseVacancyCaseObjective>>& Objectives, const FName& ObjectiveID);
 	static FName GetObjectiveID(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex);
 	static bool TryActivateObjectiveByID(UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex, const FName& ObjectiveID, const AVacancyPlayerCharacter* PlayerCharacter);
 	static bool IsObjectiveActive(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex, const FName& ObjectiveID);
 	static bool IsObjectiveComplete(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex, const FName& ObjectiveID);
 	static EVacancyCaseObjectiveStatus GetObjectiveState(const UBaseVacancyCaseObjective* Objective, const int32 ObjectiveIndex, const FName& ObjectiveID);
+	static TArray<TSoftClassPtr<UBaseVacancyCaseObjective>> FindObjectiveClassesInFolder(const FString& FolderPath);
 };

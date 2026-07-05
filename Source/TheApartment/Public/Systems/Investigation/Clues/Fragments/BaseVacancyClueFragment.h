@@ -10,7 +10,7 @@ class UBaseVacancyClue;
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class THEAPARTMENT_API UBaseVacancyClueFragment : public UObject
 {
 	GENERATED_BODY()

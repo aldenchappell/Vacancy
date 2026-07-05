@@ -43,7 +43,12 @@ public:
 	static void FadeOutWidget(UUserWidget* Widget, float Duration);
 
 	UFUNCTION(BlueprintCallable, Category="Vacancy UI Utils")
-	static UVacancyUserWidgetBase* GetHUDElementByType(
+	static UVacancyUserWidgetBase* GetHUDElementByElementType(
+		const AVacancyPlayerCharacter* PlayerCharacter,
+		const EVacancyHUDElementType HUDType);
+
+	UFUNCTION(BlueprintCallable, Category="Vacancy UI Utils")
+	static UVacancyUserWidgetBase* GetHUDElementByHUDType(
 		const AVacancyPlayerCharacter* PlayerCharacter,
 		const EVacancyHUDType HUDType);
 };

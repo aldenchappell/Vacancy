@@ -164,6 +164,12 @@ struct FVacancyCaseObjectiveData
 	FName ObjectiveID = NAME_None;
 
 	/*
+	 * Index of the objective in the case file, used to determine the order in which to display objectives to the player
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
+	int32 ObjectiveIndex = 0;
+
+	/*
 	 * Gameplay tag for the objective, used to categorize and filter objectives in the game
 	 * Will also be used to determine which objectives are displayed in the player's HUD compass
 	 */
@@ -181,6 +187,14 @@ struct FVacancyCaseObjectiveData
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
 	TArray<FVacancyCaseObjectiveStateData> Objectives;
+
+	static void SortObjectivesByIndex(TArray<FVacancyCaseObjectiveStateData>& Objectives)
+	{
+		Objectives.Sort([](const FVacancyCaseObjectiveStateData& A, const FVacancyCaseObjectiveStateData& B)
+		{
+			return A.ObjectiveDisplayText.ToString() < B.ObjectiveDisplayText.ToString();
+		});
+	}
 };
 
 USTRUCT(BlueprintType)

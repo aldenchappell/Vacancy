@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/VacancyHUD.h"
 #include "UI/VacancyUserWidgetBase.h"
+#include "UI/Case/CaseClueHUDWidget.h"
 #include "UI/Inventory/Evidence/PlayerCaseInventoryHUD.h"
 #include "UI/Inventory/Tools/PlayerToolHUDSuite.h"
 #include "UI/Tools/PlayerActiveToolHUD.h"
@@ -138,67 +139,28 @@ void UVacancyUIUtils::FadeOutWidget(UUserWidget* Widget, float Duration)
 	}
 }
 
-UVacancyUserWidgetBase* UVacancyUIUtils::GetHUDElementByType(const AVacancyPlayerCharacter* PlayerCharacter,
-	const EVacancyHUDType HUDType)
+UVacancyUserWidgetBase* UVacancyUIUtils::GetHUDElementByElementType(
+	const AVacancyPlayerCharacter* PlayerCharacter,
+	const EVacancyHUDElementType HUDType)
 {
-	if (!IsValid(PlayerCharacter))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GetHUDElementByType called with null PlayerCharacter."));
-		return nullptr;
-	}
-
-	if (HUDType == EVacancyHUDType::None)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GetHUDElementByType called with HUDType::None."));
-		return nullptr;
-	}
-
-	const AVacancyHUD* VacancyHUD = GetVacancyHUD(PlayerCharacter);
+	AVacancyHUD* VacancyHUD = GetVacancyHUD(PlayerCharacter);
 	if (!IsValid(VacancyHUD))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GetHUDElementByType failed: VacancyHUD is null."));
 		return nullptr;
 	}
-	
-	switch (HUDType)
-	{
-		case EVacancyHUDType::ToolHUD:
-		{
-			UPlayerActiveToolHUD* ToolHUD = VacancyHUD->GetActiveToolHUD();
-			if (!IsValid(ToolHUD))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("GetHUDElementByType failed: HUDWidget is not valid."));
-				return nullptr;
-			}
-			return ToolHUD;
-		}
-		case EVacancyHUDType::ToolHUDSuite:
-		{
-			UPlayerToolHUDSuite* ToolHUDSuite = VacancyHUD->GetToolHUDSuite();
-			if (!IsValid(ToolHUDSuite))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("GetHUDElementByType failed: ToolHUDSuite is not valid."));
-				return nullptr;
-			}
-			return ToolHUDSuite;
-		}
-		case EVacancyHUDType::CaseInventory:
-		{
-			UPlayerCaseInventoryHUD* CaseInventoryHUD = VacancyHUD->GetCaseInventoryHUD();
-			if (!IsValid(CaseInventoryHUD))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("GetHUDElementByType failed: CaseInventoryHUD is not valid."));
-				return nullptr;
-			}
 
-			return CaseInventoryHUD;
-		}
-		default:
-			UE_LOG(LogTemp, Warning, TEXT("GetHUDElementByType failed: Unhandled HUDType."));
-			return nullptr;
-		break;
-	}
-
-	return nullptr; // Default return if no valid HUD element is found
+	return VacancyHUD->GetHUDElementByElementType(HUDType);
 }
 
+UVacancyUserWidgetBase* UVacancyUIUtils::GetHUDElementByHUDType(
+	const AVacancyPlayerCharacter* PlayerCharacter,
+	const EVacancyHUDType HUDType)
+{
+	AVacancyHUD* VacancyHUD = GetVacancyHUD(PlayerCharacter);
+	if (!IsValid(VacancyHUD))
+	{
+		return nullptr;
+	}
+
+	return VacancyHUD->GetHUDScreenByType(HUDType);
+}
