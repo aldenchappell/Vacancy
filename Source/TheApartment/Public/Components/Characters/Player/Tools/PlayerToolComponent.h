@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Systems/Items/Tools/ToolData.h"
 #include "PlayerToolComponent.generated.h"
 
 class UBasePlayerProgressionComponent;
@@ -42,6 +43,8 @@ public:
 	}
 };
 
+
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class THEAPARTMENT_API UPlayerToolComponent : public UActorComponent
 {
@@ -54,7 +57,7 @@ public:
 	UFUNCTION()
 	bool EquipNewTool(const FPlayerToolAttachmentStateInfo& NewToolState);
 	UFUNCTION()
-	void UnequipCurrentTool();
+	bool UnequipCurrentTool();
 
 protected:
 	
@@ -70,6 +73,9 @@ private:
 	UPROPERTY()
 	AVacancyPlayerCharacter* OwningPlayerCharacter = nullptr;
 
+	UPROPERTY()
+	EToolType CurrentToolType = EToolType::MAX;
+
 	void UpdateCurrentAttachmentState(const FPlayerToolAttachmentStateInfo& NewAttachmentState);
 
 	UFUNCTION()
@@ -78,7 +84,7 @@ private:
 	UFUNCTION()
 	void RemoveSpawnedTool(ABaseTool* NewSpawnedTool);
 
-	bool AttachToolToSocket(const FPlayerToolAttachmentStateInfo& NewToolState);
+	bool AttachToolToSocket(const FPlayerToolAttachmentStateInfo& NewToolState) const;
 public:
 	
 	bool IsToolEquipped() const;

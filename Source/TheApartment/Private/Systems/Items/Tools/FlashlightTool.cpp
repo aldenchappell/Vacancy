@@ -16,10 +16,24 @@ AFlashlightTool::AFlashlightTool()
 	FlashlightComponent->SetIntensity(FlashlightSettings.Intensity);
 	FlashlightComponent->SetAttenuationRadius(FlashlightSettings.AttenuationRadius);
 	FlashlightComponent->SetLightColor(FlashlightSettings.LightColor);
+
+	ToolData.ToolType = EToolType::Flashlight;
+	ToolData.ToolDisplayName = FName("Flashlight");
+	ToolData.ToolDescription = FText::FromString("A flashlight to illuminate dark areas.");
 }
 
 void AFlashlightTool::BeginPlay()
 {
 	Super::BeginPlay();
 	
+}
+
+void AFlashlightTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
+{
+	Super::OnToolEquipped_Implementation(UnequippingCharacter);
+}
+
+void AFlashlightTool::OnToolUnequipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
+{
+	Super::OnToolUnequipped_Implementation(UnequippingCharacter);
 }

@@ -4,6 +4,7 @@
 #include "Systems/Items/Tools/BaseTool.h"
 
 #include "Characters/Player/VacancyPlayerCharacter.h"
+#include "UI/VacancyHUDData.h"
 
 
 ABaseTool::ABaseTool()
@@ -43,15 +44,44 @@ void ABaseTool::BeginPlay()
 
 void ABaseTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
 {
-	if (IsValid(InitialToolAnim) && IsValid(UnequippingCharacter))
+	if (IsValid(UnequipToolAnim) && IsValid(UnequippingCharacter))
 	{
-		UnequippingCharacter->PlayAnimMontage(InitialToolAnim);
+		UnequippingCharacter->StopAnimMontage(UnequipToolAnim);
 	}
+	
+	if (IsValid(EquipToolAnim) && IsValid(UnequippingCharacter))
+	{
+		UnequippingCharacter->PlayAnimMontage(EquipToolAnim);
+	}
+
+	const float MontageDuration = IsValid(EquipToolAnim) ? EquipToolAnim->GetPlayLength() : 0.f;
+	FTimerHandle EquipTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(
+	EquipTimerHandle,
+		[this, UnequippingCharacter]()
+		{
+			if (IsValid(UnequippingCharacter))
+			{
+				UnequippingCharacter->UpdateHUDByType(EVacancyHUDElementType::ToolHUD);
+			}
+		},
+		MontageDuration,
+		false
+	);
+	// Additional logic for when the tool is equipped will be implemented in derived classes.
 }
 
 void ABaseTool::OnToolUnequipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
 {
-	
+	if (IsValid(EquipToolAnim) && IsValid(UnequippingCharacter))
+	{
+		UnequippingCharacter->StopAnimMontage(EquipToolAnim);
+	}
+
+	if (IsValid(UnequipToolAnim) && IsValid(UnequippingCharacter))
+	{
+		UnequippingCharacter->PlayAnimMontage(UnequipToolAnim);
+	}
 }
 
 FName ABaseTool::GetToolAttachSocket() const

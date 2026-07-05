@@ -40,8 +40,8 @@ class THEAPARTMENT_API UBasePlayerProgressionComponent : public UActorComponent
 public:
 	UBasePlayerProgressionComponent();
 
-	void ToggleComponentToolState(const bool bEnable);
-
+	bool ToggleComponentToolState(const bool bEnable);
+	
 	void UnlockProgressionComponentTool();
 
 	UPROPERTY(BlueprintAssignable, Category="Player Progression Component")
@@ -52,7 +52,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	virtual void Internal_ToggleComponentToolState(const bool bEnable);
+	virtual bool Internal_ToggleComponentToolState(const bool bEnable);
 
 	UFUNCTION(BlueprintNativeEvent, Category="Player Progression Component")
 	void OnComponentToolStateUnlocked();
@@ -66,8 +66,8 @@ protected:
 private:
 
 	bool AttachToolToDesiredSocket();
-	void DetachToolFromSocket(const AActor* ToolActor);
-	void HandleToolAlreadyEquipped(const bool bForceSwap = false);
+	bool DetachToolFromSocket(const AActor* ToolActor) const;
+	void HandleToolAlreadyEquipped(const bool bForceSwap = false) const;
 
 	void ConstructNewProgressionInfo(FPlayerToolAttachmentStateInfo& NewToolState, ABaseTool*& NewToolInstance) const;
 
