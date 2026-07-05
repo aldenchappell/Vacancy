@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Characters/Player/VacancyPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
@@ -17,23 +16,46 @@
 #include "Components/Characters/Player/Tools/PlayerToolComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "UI/Inventory/Evidence/PlayerCaseInventoryHUD.h"
-#include "UI/Inventory/Tools/PlayerToolHUDSuite.h"
-#include "UI/Tools/PlayerActiveToolHUD.h"
+#include "Systems/Items/Tools/BaseTool.h"
+#include "UI/VacancyHUD.h"
 #include "Utilities/Gameplay/VacancyUIUtils.h"
-
 
 AVacancyPlayerCharacter::AVacancyPlayerCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	// -------------------------------------------------------------------------
+	// Camera Setup
+	// -------------------------------------------------------------------------
+
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
-	SpringArm->TargetArmLength = 0.f; //start in first person.
-	SpringArm->bUsePawnControlRotation = false;
+	SpringArm->TargetArmLength = 0.f;
+
+	/*
+	 * For first-person camera pitch to work through AddPitchInput(),
+	 * something in the camera chain needs to use pawn control rotation.
+	 *
+	 * The spring arm should consume controller rotation.
+	 * The camera itself should simply follow the spring arm.
+	 */
+	SpringArm->bUsePawnControlRotation = true;
+	SpringArm->bInheritPitch = true;
+	SpringArm->bInheritYaw = true;
+	SpringArm->bInheritRoll = false;
 
 	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
 	PlayerCamera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
+	PlayerCamera->bUsePawnControlRotation = false;
+
+	// First-person character rotation setup.
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = true;
+	bUseControllerRotationRoll = false;
+
+	// -------------------------------------------------------------------------
+	// Gameplay Components
+	// -------------------------------------------------------------------------
 
 	PlayerInteractionComponent = CreateDefaultSubobject<UPlayerInteractionComponent>(TEXT("PlayerInteractionComponent"));
 	PlayerObjectiveComponent = CreateDefaultSubobject<UPlayerObjectiveComponent>(TEXT("PlayerObjectiveComponent"));
@@ -41,21 +63,27 @@ AVacancyPlayerCharacter::AVacancyPlayerCharacter()
 	EvidenceInventoryComponent = CreateDefaultSubobject<UEvidenceInventoryComponent>(TEXT("EvidenceInventoryComponent"));
 	SuspicionReceiverComponent = CreateDefaultSubobject<USuspicionReceiverComponent>(TEXT("SuspicionReceiverComponent"));
 	PlayerToolComponent = CreateDefaultSubobject<UPlayerToolComponent>(TEXT("PlayerToolComponent"));
+
 	PlayerCameraComponent = CreateDefaultSubobject<UPlayerCameraComponent>(TEXT("PlayerCameraComponent"));
 	PlayerFlashlightComponent = CreateDefaultSubobject<UPlayerFlashlightComponent>(TEXT("PlayerFlashlightComponent"));
 	PlayerPhoneComponent = CreateDefaultSubobject<UPlayerPhoneComponent>(TEXT("PlayerPhoneComponent"));
 	PlayerRecorderComponent = CreateDefaultSubobject<UPlayerRecorderComponent>(TEXT("PlayerRecorderComponent"));
 
-	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+	// -------------------------------------------------------------------------
+	// Movement Setup
+	// -------------------------------------------------------------------------
+
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		MovementComponent->NavAgentProps.bCanCrouch = true;
+		MovementComponent->bOrientRotationToMovement = false;
+	}
 }
 
 void AVacancyPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
-
-
 
 void AVacancyPlayerCharacter::Tick(const float DeltaTime)
 {
@@ -66,100 +94,142 @@ void AVacancyPlayerCharacter::UpdateAnimPropsForEquippedTool(const ABaseTool* Eq
 {
 	if (!IsValid(EquippedTool))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UpdateAnimPropsForEquippedTool called with null EquippedTool."));
+		UE_LOG(LogTemp, Warning, TEXT("UpdateAnimPropsForEquippedTool failed: EquippedTool is invalid."));
+		return;
+	}
+
+	USkeletalMeshComponent* PlayerMesh = GetMesh();
+	if (!IsValid(PlayerMesh))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpdateAnimPropsForEquippedTool failed: Player mesh is invalid."));
+		return;
+	}
+
+	UVacancyPlayerAnimInstance* AnimInstance =
+		Cast<UVacancyPlayerAnimInstance>(PlayerMesh->GetAnimInstance());
+
+	if (!IsValid(AnimInstance))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpdateAnimPropsForEquippedTool failed: AnimInstance is invalid."));
 		return;
 	}
 
 	const EToolType EquippedToolType = EquippedTool->GetToolData().ToolType;
-	UVacancyPlayerAnimInstance* AnimInstance = Cast<UVacancyPlayerAnimInstance>(GetMesh()->GetAnimInstance());
-	if (!IsValid(AnimInstance))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("UpdateAnimPropsForEquippedTool failed: AnimInstance is not valid."));
-		return;
-	}
-
 	AnimInstance->UpdateEquippedToolType(EquippedToolType);
 }
 
-void AVacancyPlayerCharacter::UpdateHUDByType(const EVacancyHUDType& HUDType) const
+void AVacancyPlayerCharacter::UpdateHUDByType(const EVacancyHUDElementType& HUDType) const
 {
-	if (HUDType == EVacancyHUDType::None)
+	/*
+	 * Backwards-compatible function.
+	 *
+	 * Old code can keep calling UpdateHUDByType().
+	 * New code should call RefreshHUDElement() directly.
+	 */
+	RefreshHUDElement(HUDType);
+}
+
+void AVacancyPlayerCharacter::RefreshHUDElement(const EVacancyHUDElementType HUDElementType) const
+{
+	if (HUDElementType == EVacancyHUDElementType::None)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UpdateHUDByType called with HUDType::None. No action taken."));
+		UE_LOG(LogTemp, Warning, TEXT("RefreshHUDElement failed: HUDElementType is None."));
 		return;
 	}
 
-	switch (HUDType)
+	AVacancyHUD* VacancyHUD = GetVacancyHUD();
+	if (!IsValid(VacancyHUD))
 	{
-		case EVacancyHUDType::ToolHUD:
-		{
-			UVacancyUserWidgetBase* HUDWidget =
-				UVacancyUIUtils::GetHUDElementByType(this, EVacancyHUDType::ToolHUD);
-
-			UPlayerActiveToolHUD* ToolHUDWidget = Cast<UPlayerActiveToolHUD>(HUDWidget);
-			if (!IsValid(ToolHUDWidget))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("UpdateHUDByType failed: ToolHUDWidget is not valid."));
-				return;
-			}
-
-			ToolHUDWidget->UpdateToolHUD();
-			break;
-		}
-
-		case EVacancyHUDType::ToolHUDSuite:
-		{
-			UVacancyUserWidgetBase* HUDWidget =
-				UVacancyUIUtils::GetHUDElementByType(this, EVacancyHUDType::ToolHUDSuite);
-
-			UPlayerToolHUDSuite* ToolHUDSuiteWidget = Cast<UPlayerToolHUDSuite>(HUDWidget);
-			if (!IsValid(ToolHUDSuiteWidget))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("UpdateHUDByType failed: ToolHUDSuiteWidget is not valid."));
-				return;
-			}
-
-			ToolHUDSuiteWidget->UpdateToolSuiteHUD();
-			break;
-		}
-
-		case EVacancyHUDType::CaseInventory:
-		{
-			UVacancyUserWidgetBase* HUDWidget =
-				UVacancyUIUtils::GetHUDElementByType(this, EVacancyHUDType::CaseInventory);
-
-			UPlayerCaseInventoryHUD* CaseInventoryWidget = Cast<UPlayerCaseInventoryHUD>(HUDWidget);
-			if (!IsValid(CaseInventoryWidget))
-			{
-				UE_LOG(LogTemp, Warning, TEXT("UpdateHUDByType failed: CaseInventoryWidget is not valid."));
-				return;
-			}
-
-			CaseInventoryWidget->UpdateCaseInventoryHUD();
-			break;
-		}
-
-		default:
-		{
-			UE_LOG(
-				LogTemp,
-				Warning,
-				TEXT("UpdateHUDByType called with unhandled HUDType: %d"),
-				static_cast<int32>(HUDType)
-			);
-
-			break;
-		}
+		UE_LOG(LogTemp, Warning, TEXT("RefreshHUDElement failed: VacancyHUD is invalid."));
+		return;
 	}
+
+	VacancyHUD->RefreshHUDElement(HUDElementType);
 }
 
-bool AVacancyPlayerCharacter::ValidateHUDWidget(const UVacancyUserWidgetBase* HUDWidget)
+void AVacancyPlayerCharacter::SetHUDElementVisible(
+	const EVacancyHUDElementType HUDElementType,
+	const bool bVisible) const
 {
-	if (!IsValid(HUDWidget))
+	if (HUDElementType == EVacancyHUDElementType::None)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ValidateHUDWidget failed: HUDWidget: %s is not valid."), *GetNameSafe(HUDWidget));
-		return false;
+		UE_LOG(LogTemp, Warning, TEXT("SetHUDElementVisible failed: HUDElementType is None."));
+		return;
 	}
-	
-	return true;
+
+	AVacancyHUD* VacancyHUD = GetVacancyHUD();
+	if (!IsValid(VacancyHUD))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetHUDElementVisible failed: VacancyHUD is invalid."));
+		return;
+	}
+
+	VacancyHUD->SetHUDElementVisible(HUDElementType, bVisible);
+}
+
+void AVacancyPlayerCharacter::RefreshHUDScreen(const EVacancyHUDType HUDType) const
+{
+	if (HUDType == EVacancyHUDType::None)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("RefreshHUDScreen failed: HUDType is None."));
+		return;
+	}
+
+	AVacancyHUD* VacancyHUD = GetVacancyHUD();
+	if (!IsValid(VacancyHUD))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("RefreshHUDScreen failed: VacancyHUD is invalid."));
+		return;
+	}
+
+	VacancyHUD->RefreshHUDScreen(HUDType);
+}
+
+void AVacancyPlayerCharacter::SetHUDScreenVisible(
+	const EVacancyHUDType HUDType,
+	const bool bVisible) const
+{
+	if (HUDType == EVacancyHUDType::None)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetHUDScreenVisible failed: HUDType is None."));
+		return;
+	}
+
+	AVacancyHUD* VacancyHUD = GetVacancyHUD();
+	if (!IsValid(VacancyHUD))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetHUDScreenVisible failed: VacancyHUD is invalid."));
+		return;
+	}
+
+	VacancyHUD->SetHUDScreenVisible(HUDType, bVisible);
+}
+
+void AVacancyPlayerCharacter::ShowOnlyHUDScreen(const EVacancyHUDType HUDType) const
+{
+	if (HUDType == EVacancyHUDType::None)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ShowOnlyHUDScreen failed: HUDType is None."));
+		return;
+	}
+
+	AVacancyHUD* VacancyHUD = GetVacancyHUD();
+	if (!IsValid(VacancyHUD))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ShowOnlyHUDScreen failed: VacancyHUD is invalid."));
+		return;
+	}
+
+	VacancyHUD->ShowOnlyHUDScreen(HUDType);
+}
+
+AVacancyHUD* AVacancyPlayerCharacter::GetVacancyHUD() const
+{
+	AVacancyHUD* VacancyHUD = UVacancyUIUtils::GetVacancyHUD(this);
+	if (!IsValid(VacancyHUD))
+	{
+		return nullptr;
+	}
+
+	return VacancyHUD;
 }

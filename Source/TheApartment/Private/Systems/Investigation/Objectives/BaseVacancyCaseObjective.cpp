@@ -2,17 +2,32 @@
 
 #include "Systems/Investigation/Objectives/BaseVacancyCaseObjective.h"
 #include "Characters/Player/VacancyPlayerCharacter.h"
+#include "Components/Characters/Player/PlayerObjectiveComponent/PlayerObjectiveComponent.h"
+#include "Systems/Investigation/Objectives/VacancyObjectiveActor.h"
+#include "Utilities/Gameplay/VacancyPlayerUtils.h"
 
-static TAutoConsoleVariable<bool> CVarEnableObjectiveLogging(
+static bool GVacancyObjectiveLogging = false;
+
+static FAutoConsoleVariableRef CVarEnableObjectiveLoggingRef(
 	TEXT("Vacancy.Objective.EnableLogging"),
-	false,
+	GVacancyObjectiveLogging,
 	TEXT("Enable logging for objectives."),
 	ECVF_Cheat
 );
 
 void UBaseVacancyCaseObjective::OnObjectiveInitialized_Implementation()
 {
-	OnObjectiveStatusChanged.AddDynamic(this, &UBaseVacancyCaseObjective::HandleEnterObjectiveState);
+	SortObjectivesByProgressionIndex();
+
+	if (DebugObjectiveState())
+	{
+		UE_LOG(
+			LogTemp,
+			Log,
+			TEXT("Objective initialized. ObjectiveID: %s"),
+			*ObjectiveData.ObjectiveID.ToString()
+		);
+	}
 }
 
 void UBaseVacancyCaseObjective::InitializeObjective()
@@ -41,22 +56,56 @@ FName UBaseVacancyCaseObjective::GetObjectiveID() const
 	return ObjectiveData.ObjectiveID;
 }
 
-void UBaseVacancyCaseObjective::SetObjectiveStatus(const EVacancyCaseObjectiveStatus NewStatus, const AVacancyPlayerCharacter* PlayerCharacter)
+void UBaseVacancyCaseObjective::SetObjectiveOwnerActor(AActor* NewOwnerActor)
+{
+	if (!IsValid(NewOwnerActor))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetObjectiveOwnerActor called with null NewOwnerActor."));
+		return;
+	}
+
+	// Set the owner of this objective to the new actor
+	ObjectiveOwnerActor = NewOwnerActor;
+}
+
+void UBaseVacancyCaseObjective::SetObjectiveStatus(
+	const EVacancyCaseObjectiveStatus NewStatus,
+	const AVacancyPlayerCharacter* PlayerCharacter)
 {
 	if (!IsValid(PlayerCharacter))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SetObjectiveStatus called with null PlayerCharacter."));
 		return;
 	}
-	
+
 	if (NewStatus == EVacancyCaseObjectiveStatus::MAX)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SetObjectiveStatus: Invalid NewStatus for Objective: %s."), *ObjectiveData.ObjectiveID.ToString());
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("SetObjectiveStatus failed: invalid NewStatus for ObjectiveID %s."),
+			*ObjectiveData.ObjectiveID.ToString()
+		);
+
+		return;
+	}
+
+	if (ObjectiveStatus == NewStatus)
+	{
 		return;
 	}
 
 	ObjectiveStatus = NewStatus;
-	OnObjectiveStatusChanged.Broadcast(NewStatus, nullptr);
+	bIsObjectiveCompleted = NewStatus == EVacancyCaseObjectiveStatus::Completed;
+
+	HandleEnterObjectiveState(NewStatus, PlayerCharacter);
+
+	OnObjectiveStatusChanged.Broadcast(NewStatus, PlayerCharacter);
+
+	if (NewStatus == EVacancyCaseObjectiveStatus::Completed)
+	{
+		OnObjectiveCompleted.Broadcast();
+	}
 }
 
 void UBaseVacancyCaseObjective::MarkObjectiveAsActive(const AVacancyPlayerCharacter* PlayerCharacter)
@@ -126,55 +175,98 @@ FVacancyCaseObjectiveStateData UBaseVacancyCaseObjective::GetObjectiveAtIndex(co
 	return ObjectiveData.Objectives[ObjectiveIndex];
 }
 
-bool UBaseVacancyCaseObjective::SetObjectiveState(const FName& ObjectiveID, const EVacancyCaseObjectiveStatus NewState)
+bool UBaseVacancyCaseObjective::SetObjectiveState(
+	const FName& ObjectiveID,
+	const EVacancyCaseObjectiveStatus NewState)
 {
-	for (FVacancyCaseObjectiveStateData& ObjectiveState : ObjectiveData.Objectives)
+	if (ObjectiveID.IsNone())
 	{
-		if (ObjectiveData.ObjectiveID == ObjectiveID)
-		{
-			ObjectiveStatus = NewState;
-			bIsObjectiveCompleted = (NewState == EVacancyCaseObjectiveStatus::Completed);
-			OnObjectiveCompleted.Broadcast();
-			return true;
-		}
+		UE_LOG(LogTemp, Warning, TEXT("SetObjectiveState failed: ObjectiveID is None."));
+		return false;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("SetObjectiveState: Objective with ID %s not found."), *ObjectiveID.ToString());
-	return false;
+	if (ObjectiveData.ObjectiveID != ObjectiveID)
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("SetObjectiveState failed: ObjectiveID %s does not match this objective's ID %s."),
+			*ObjectiveID.ToString(),
+			*ObjectiveData.ObjectiveID.ToString()
+		);
+
+		return false;
+	}
+
+	if (NewState == EVacancyCaseObjectiveStatus::MAX)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SetObjectiveState failed: invalid NewState."));
+		return false;
+	}
+
+	ObjectiveStatus = NewState;
+	bIsObjectiveCompleted = NewState == EVacancyCaseObjectiveStatus::Completed;
+
+	if (NewState == EVacancyCaseObjectiveStatus::Completed)
+	{
+		OnObjectiveCompleted.Broadcast();
+	}
+
+	return true;
 }
 
-void UBaseVacancyCaseObjective::HandleEnterObjectiveState(const EVacancyCaseObjectiveStatus NewState,
-const AVacancyPlayerCharacter* PlayerCharacter)
+void UBaseVacancyCaseObjective::HandleEnterObjectiveState(
+	const EVacancyCaseObjectiveStatus NewState,
+	const AVacancyPlayerCharacter* PlayerCharacter)
 {
 	if (NewState == EVacancyCaseObjectiveStatus::MAX)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("HandleEnterObjectiveState: Invalid NewState for Objective: %s."), *ObjectiveData.ObjectiveID.ToString());
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("HandleEnterObjectiveState failed: invalid NewState for ObjectiveID %s."),
+			*ObjectiveData.ObjectiveID.ToString()
+		);
+
 		return;
 	}
 
 	if (!IsValid(PlayerCharacter))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("HandleEnterObjectiveState: Invalid PlayerCharacter for ObjectiveID %s."), *ObjectiveData.ObjectiveID.ToString());
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("HandleEnterObjectiveState failed: invalid PlayerCharacter for ObjectiveID %s."),
+			*ObjectiveData.ObjectiveID.ToString()
+		);
+
 		return;
 	}
 
 	switch (NewState)
 	{
 		case EVacancyCaseObjectiveStatus::Active:
-			HandleEnterActiveState();
+			HandleEnterActiveState(PlayerCharacter);
 			break;
+
 		case EVacancyCaseObjectiveStatus::Completed:
-			HandleEnterCompletedState();
+			HandleEnterCompletedState(PlayerCharacter);
 			break;
+
 		case EVacancyCaseObjectiveStatus::Failed:
-			HandleEnterFailedState();
+			HandleEnterFailedState(PlayerCharacter);
 			break;
+
 		default:
-			UE_LOG(LogTemp, Warning, TEXT("HandleEnterObjectiveState: Unhandled state %d for ObjectiveID %s."), static_cast<int32>(NewState), *ObjectiveData.ObjectiveID.ToString());
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("HandleEnterObjectiveState: unhandled state %d for ObjectiveID %s."),
+				static_cast<int32>(NewState),
+				*ObjectiveData.ObjectiveID.ToString()
+			);
 			break;
 	}
-
-	OnObjectiveStatusChanged.Broadcast(NewState, PlayerCharacter);
 }
 
 void UBaseVacancyCaseObjective::SortObjectivesByProgressionIndex() const
@@ -189,7 +281,7 @@ void UBaseVacancyCaseObjective::SortObjectivesByProgressionIndex() const
 	ObjectiveData.SortObjectivesByIndex(UnsortedObjectives);
 }
 
-void UBaseVacancyCaseObjective::HandleEnterActiveState_Implementation()
+void UBaseVacancyCaseObjective::HandleEnterActiveState_Implementation(const AVacancyPlayerCharacter* PlayerCharacter)
 {
 	if (DebugObjectiveState())
 	{
@@ -197,15 +289,37 @@ void UBaseVacancyCaseObjective::HandleEnterActiveState_Implementation()
 	}
 }
 
-void UBaseVacancyCaseObjective::HandleEnterCompletedState_Implementation()
+void UBaseVacancyCaseObjective::HandleEnterCompletedState_Implementation(const AVacancyPlayerCharacter* PlayerCharacter)
 {
 	if (DebugObjectiveState())
 	{
 		UE_LOG(LogTemp, Log, TEXT("Objective completed. ObjectiveID: %s"), *ObjectiveData.ObjectiveID.ToString());
 	}
+
+	if (!IsValid(PlayerCharacter))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HandleEnterCompletedState called with null PlayerCharacter."));
+		return;
+	}
+
+	if (UPlayerObjectiveComponent* PlayerObjectiveComponent = UVacancyPlayerUtils::GetPlayerComponent<UPlayerObjectiveComponent>(PlayerCharacter))
+	{
+		PlayerObjectiveComponent->ClearActiveObjective();
+		if (ObjectiveOwnerActor)
+		{
+			if (AVacancyObjectiveActor* ObjectiveOwner = Cast<AVacancyObjectiveActor>(ObjectiveOwnerActor))
+			{
+				ObjectiveOwner->OnObjectiveCompleted(this, PlayerCharacter);
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HandleEnterCompletedState: PlayerObjectiveComponent is null for PlayerCharacter %s."), *PlayerCharacter->GetName());
+	}
 }
 
-void UBaseVacancyCaseObjective::HandleEnterFailedState_Implementation()
+void UBaseVacancyCaseObjective::HandleEnterFailedState_Implementation(const AVacancyPlayerCharacter* PlayerCharacter)
 {
 	if (DebugObjectiveState())
 	{
@@ -215,5 +329,5 @@ void UBaseVacancyCaseObjective::HandleEnterFailedState_Implementation()
 
 bool UBaseVacancyCaseObjective::DebugObjectiveState()
 {
-	return CVarEnableObjectiveLogging.GetValueOnGameThread();
+	return GVacancyObjectiveLogging;
 }

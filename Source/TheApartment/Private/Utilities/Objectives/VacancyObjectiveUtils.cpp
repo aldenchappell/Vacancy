@@ -3,13 +3,19 @@
 
 #include "Utilities/Objectives/VacancyObjectiveUtils.h"
 
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetRegistry/IAssetRegistry.h"
 #include "Characters/Player/VacancyPlayerCharacter.h"
 #include "Components/Characters/Player/PlayerObjectiveComponent/PlayerObjectiveComponent.h"
 #include "Systems/Investigation/Objectives/BaseVacancyCaseObjective.h"
+#include "Engine/Blueprint.h"
+#include "UObject/SoftObjectPath.h"
+#include "Misc/PackageName.h"
 #include "Utilities/Gameplay/VacancyPlayerUtils.h"
 
-UBaseVacancyCaseObjective* UVacancyObjectiveUtils::SpawnObjective(const UObject* WorldContextObject,
-                                                                  const TSubclassOf<UBaseVacancyCaseObjective> ObjectiveClass)
+UBaseVacancyCaseObjective* UVacancyObjectiveUtils::SpawnObjective(
+	const UObject* WorldContextObject,
+	const TSubclassOf<UBaseVacancyCaseObjective> ObjectiveClass)
 {
 	if (!IsValid(WorldContextObject))
 	{
@@ -23,17 +29,20 @@ UBaseVacancyCaseObjective* UVacancyObjectiveUtils::SpawnObjective(const UObject*
 		return nullptr;
 	}
 
-	UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject);
-	if (!IsValid(World))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SpawnObjective: Unable to get a valid UWorld from the provided WorldContextObject."));
-		return nullptr;
-	}
+	UObject* ObjectiveOuter = const_cast<UObject*>(WorldContextObject);
 
-	UBaseVacancyCaseObjective* NewObjective = NewObject<UBaseVacancyCaseObjective>(World, ObjectiveClass);
+	UBaseVacancyCaseObjective* NewObjective =
+		NewObject<UBaseVacancyCaseObjective>(ObjectiveOuter, ObjectiveClass);
+
 	if (!IsValid(NewObjective))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SpawnObjective: Failed to create a new instance of the objective class %s."), *ObjectiveClass->GetName());
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("SpawnObjective failed to create objective from class %s."),
+			*GetNameSafe(ObjectiveClass)
+		);
+
 		return nullptr;
 	}
 
@@ -42,44 +51,25 @@ UBaseVacancyCaseObjective* UVacancyObjectiveUtils::SpawnObjective(const UObject*
 }
 
 UBaseVacancyCaseObjective* UVacancyObjectiveUtils::GetObjectiveByID(
-	const TArray<UBaseVacancyCaseObjective*>& Objectives, const FName& ObjectiveID)
+	const TArray<TObjectPtr<UBaseVacancyCaseObjective>>& Objectives,
+	const FName& ObjectiveID)
 {
 	if (ObjectiveID.IsNone())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GetObjectiveByID called with an invalid ObjectiveID."));
+		UE_LOG(LogTemp, Warning, TEXT("GetObjectiveByID failed: ObjectiveID is None."));
 		return nullptr;
 	}
 
-	if (Objectives.Num() == 0)
+	for (UBaseVacancyCaseObjective* Objective : Objectives)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GetObjectiveByID called with an empty Objectives array."));
-		return nullptr;
-	}
-
-	const TArray<FName> ObjectiveIDs = TArray<FName>();
-	
-	for (UBaseVacancyCaseObjective* Objective: Objectives)
-	{
-		if (!IsValid(Objective))	
+		if (!IsValid(Objective))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("GetObjectiveByID: Encountered an invalid objective in the Objectives array."));
 			continue;
 		}
 
-		if (const FName CurrentObjectiveID =
-			Objective->GetObjectivesStateData().Num() > 0 ? Objective->GetObjectiveID() :
-			NAME_None; CurrentObjectiveID.IsNone())
+		if (Objective->GetObjectiveID() == ObjectiveID)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("GetObjectiveByID: Objective %s has no valid ObjectiveID."), *Objective->GetName());
-			continue;
-		}
-		
-		for (const FName& ID: ObjectiveIDs)
-		{
-			if (ID == ObjectiveID)
-			{
-				return Objective;
-			}
+			return Objective;
 		}
 	}
 
@@ -224,21 +214,99 @@ EVacancyCaseObjectiveStatus UVacancyObjectiveUtils::GetObjectiveState(const UBas
 		EVacancyCaseObjectiveStatus::MAX;
 }
 
-TArray<FAssetData> UVacancyObjectiveUtils::LoadObjectiveDataAssets(const FString& AssetPath)
+TArray<TSoftClassPtr<UBaseVacancyCaseObjective>> UVacancyObjectiveUtils::FindObjectiveClassesInFolder(
+	const FString& FolderPath)
 {
-	if (AssetPath.IsEmpty())
+	TArray<TSoftClassPtr<UBaseVacancyCaseObjective>> ObjectiveClasses;
+
+	if (FolderPath.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("LoadObjectiveDataAssets called with an empty AssetPath."));
-		return TArray<FAssetData>();
+		UE_LOG(LogTemp, Warning, TEXT("FindObjectiveClassesInFolder failed: FolderPath is empty."));
+		return ObjectiveClasses;
 	}
 
-	if (const FSoftObjectPath SoftObjectPath(AssetPath); !SoftObjectPath.IsValid())
+	if (!FolderPath.StartsWith(TEXT("/Game/")))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("LoadObjectiveDataAssets: Invalid SoftObjectPath for AssetPath: %s"), *AssetPath);
-		return TArray<FAssetData>();
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("FindObjectiveClassesInFolder failed: invalid folder path '%s'. Use a path like /Game/Vacancy/Systems/Objectives/Objectives/Level_01."),
+			*FolderPath
+		);
+
+		return ObjectiveClasses;
 	}
 
-	
-	
-	return TArray<FAssetData>();
+	FAssetRegistryModule& AssetRegistryModule =
+		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
+
+	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+
+	/*
+	 * Scan this folder now.
+	 *
+	 * This is important when searching by folder at runtime, especially in PIE
+	 * or when assets have not already been discovered by the registry.
+	 */
+	TArray<FString> PathsToScan;
+	PathsToScan.Add(FolderPath);
+
+	AssetRegistry.ScanPathsSynchronous(PathsToScan, true);
+
+	FARFilter Filter;
+	Filter.PackagePaths.Add(FName(*FolderPath));
+	Filter.bRecursivePaths = true;
+
+	/*
+	 * Objective Blueprints are UBlueprint assets in the content browser.
+	 * The generated class inside the Blueprint is what actually derives from
+	 * UBaseVacancyCaseObjective.
+	 */
+	Filter.ClassPaths.Add(UBlueprint::StaticClass()->GetClassPathName());
+
+	TArray<FAssetData> FoundBlueprintAssets;
+	AssetRegistry.GetAssets(Filter, FoundBlueprintAssets);
+
+	for (const FAssetData& AssetData : FoundBlueprintAssets)
+	{
+		FString GeneratedClassPathString;
+
+		if (!AssetData.GetTagValue(TEXT("GeneratedClass"), GeneratedClassPathString))
+		{
+			continue;
+		}
+
+		/*
+		 * GeneratedClass tag usually comes back as an export text path.
+		 * Convert it into a normal object path.
+		 *
+		 * Example:
+		 * BlueprintGeneratedClass'/Game/.../BP_Objective.BP_Objective_C'
+		 *
+		 * becomes:
+		 * /Game/.../BP_Objective.BP_Objective_C
+		 */
+		const FString GeneratedClassObjectPath =
+			FPackageName::ExportTextPathToObjectPath(GeneratedClassPathString);
+
+		if (GeneratedClassObjectPath.IsEmpty())
+		{
+			continue;
+		}
+
+		const FSoftClassPath SoftClassPath(GeneratedClassObjectPath);
+		TSoftClassPtr<UBaseVacancyCaseObjective> ObjectiveClass(SoftClassPath);
+
+		ObjectiveClasses.Add(ObjectiveClass);
+	}
+
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("FindObjectiveClassesInFolder: Found %d possible objective Blueprint class(es) in folder: %s"),
+		ObjectiveClasses.Num(),
+		*FolderPath
+	);
+
+	return ObjectiveClasses;
 }

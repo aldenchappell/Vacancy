@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/StreamableManager.h"
 #include "GameFramework/Actor.h"
 #include "ObjectiveManager.generated.h"
 
@@ -22,6 +23,10 @@ protected:
 	
 	virtual void BeginPlay() override;
 
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(EditAnywhere)
+	UBillboardComponent* BillboardComponent;
+#endif
 	/*
 	 * References to all Objective Actors.
 	 * Will be used to spawn and manage Objective Actors in the world.
@@ -37,17 +42,17 @@ protected:
 	 * (Level Specific Paths)
 	 */
 	UPROPERTY(EditInstanceOnly, Category="Objectives")
-	FSoftObjectPath ObjectiveDataAssetPath;
+	FString LevelSpecificObjectiveDataAssetPath;
 	
 private:
-	
-	/*
-	 * Spawns all Objectives from ObjectiveActors in the world.
-	 */
-	void SpawnObjectivesFromActors();
 
-	void PopulateObjectiveActorsObjectives();
+	void LoadObjectiveClassesAsync();
+	void OnObjectiveClassesLoaded(TArray<TSoftClassPtr<UBaseVacancyCaseObjective>> LoadedObjectiveClasses);
+	void SpawnObjectivesFromLoadedClasses(const TArray<TSoftClassPtr<UBaseVacancyCaseObjective>>& LoadedObjectiveClasses);
+	void AssignObjectivesToObjectiveActors();
 
 	UPROPERTY(VisibleAnywhere, Category="Objectives", meta=(AllowPrivateAccess="true"))
 	TArray<TObjectPtr<UBaseVacancyCaseObjective>> SpawnedObjectives;
+
+	TSharedPtr<FStreamableHandle> ObjectiveLoadHandle;
 };

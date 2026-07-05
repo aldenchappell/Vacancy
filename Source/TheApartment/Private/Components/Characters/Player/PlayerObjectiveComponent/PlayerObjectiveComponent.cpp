@@ -38,7 +38,9 @@ void UPlayerObjectiveComponent::ClearActiveObjective()
 		return;
 	}
 	
-	ActiveObjective = nullptr;
+	SetActiveObjective(nullptr);
+
+	
 }
 
 void UPlayerObjectiveComponent::SetActiveObjective(UBaseVacancyCaseObjective* NewObjective)
@@ -50,6 +52,7 @@ void UPlayerObjectiveComponent::SetActiveObjective(UBaseVacancyCaseObjective* Ne
 	}
 
 	ActiveObjective = NewObjective;
+	OnActiveObjectiveChanged.Broadcast(ActiveObjective);
 }
 
 bool UPlayerObjectiveComponent::TryCompleteActiveObjective()
@@ -62,6 +65,12 @@ bool UPlayerObjectiveComponent::TryCompleteActiveObjective()
 
 	ActiveObjective->MarkObjectiveAsCompleted(Cast<AVacancyPlayerCharacter>(GetOwner()));
 	CompletedObjectives.Add(ActiveObjective);
+
+	if (const bool bHasNextObjective = QueueNextObjective(); !bHasNextObjective)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No next objective found after completing active objective on PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
+	}
+	
 	return true;
 }
 
@@ -137,6 +146,21 @@ void UPlayerObjectiveComponent::InitializePlayerObjectives()
 
 		UVacancyObjectiveUtils::SpawnObjective(this, ObjectiveClass);
 	}
+}
+
+bool UPlayerObjectiveComponent::QueueNextObjective()
+{
+	if (QueuedObjectives.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No queued objectives to set as active for PlayerObjectiveComponent on %s"), *GetOwner()->GetName());
+		return false;
+	}
+
+	UBaseVacancyCaseObjective* NextObjective = QueuedObjectives[0];
+	QueuedObjectives.RemoveAt(0);
+
+	SetActiveObjective(NextObjective);
+	return true;
 }
 
 bool UPlayerObjectiveComponent::IsObjectiveComplete(const UBaseVacancyCaseObjective* Objective) const

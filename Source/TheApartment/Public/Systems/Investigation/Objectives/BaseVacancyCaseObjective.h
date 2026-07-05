@@ -19,7 +19,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnObjectiveCompleted);
 
-UCLASS()
+UCLASS(Blueprintable)
 class THEAPARTMENT_API UBaseVacancyCaseObjective : public UObject
 {
 	GENERATED_BODY()
@@ -33,6 +33,8 @@ public:
 
 	FName GetObjectiveID() const;
 
+	void SetObjectiveOwnerActor(AActor* NewOwnerActor);
+	
 	void SetObjectiveStatus(const EVacancyCaseObjectiveStatus NewStatus, const AVacancyPlayerCharacter* PlayerCharacter);
 	FORCEINLINE EVacancyCaseObjectiveStatus GetObjectiveStatus() const { return ObjectiveStatus; }
 	
@@ -71,15 +73,15 @@ protected:
 	/*
 	* Whether the objective has been completed by the player
 	*/
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Objective Data")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Objective Data")
 	bool bIsObjectiveCompleted = false;
 	
 	UFUNCTION(BlueprintNativeEvent, Category="Case Data")
-	void HandleEnterActiveState();
+	void HandleEnterActiveState(const AVacancyPlayerCharacter* PlayerCharacter);
 	UFUNCTION(BlueprintNativeEvent, Category="Case Data")
-	void HandleEnterCompletedState();
+	void HandleEnterCompletedState(const AVacancyPlayerCharacter* PlayerCharacter);
 	UFUNCTION(BlueprintNativeEvent, Category="Case Data")
-	void HandleEnterFailedState();
+	void HandleEnterFailedState(const AVacancyPlayerCharacter* PlayerCharacter);
 
 	
 private:
@@ -97,7 +99,7 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Objective Data", meta=(AllowPrivateAccess="true"))
 	EVacancyCaseObjectiveStatus ObjectiveStatus = EVacancyCaseObjectiveStatus::MAX;
 
-	
+	AActor* ObjectiveOwnerActor = nullptr;
 public:
 
 	UFUNCTION(BlueprintCallable, Category="Case Data")

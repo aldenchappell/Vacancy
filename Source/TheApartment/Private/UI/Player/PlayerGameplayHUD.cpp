@@ -1,64 +1,100 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "UI/Player/PlayerGameplayHUD.h"
 
-#include "Characters/Player/VacancyPlayerCharacter.h"
-#include "UI/VacancyHUDData.h"
-#include "Utilities/Gameplay/VacancyUIUtils.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/Widget.h"
+#include "UI/Case/CaseClueHUDWidget.h"
+#include "UI/Inventory/Evidence/PlayerCaseInventoryHUD.h"
+#include "UI/Inventory/Tools/PlayerToolHUDSuite.h"
+#include "UI/Objectives/PlayerObjectiveHUD.h"
+#include "UI/Tools/PlayerActiveToolHUD.h"
 
-void UPlayerGameplayHUD::NativeConstruct()
+void UPlayerGameplayHUD::OnVacancyWidgetInitialized_Implementation()
 {
-	Super::NativeConstruct();
+	Super::OnVacancyWidgetInitialized_Implementation();
 
-	InitializeHUDWidgets();
+	RegisterHUDWidgetsFromWidgetTree();
 }
 
-void UPlayerGameplayHUD::NativeDestruct()
+void UPlayerGameplayHUD::RegisterHUDWidgetsFromWidgetTree()
 {
-	Super::NativeDestruct();
-}
+	RegisteredHUDElements.Empty();
 
-void UPlayerGameplayHUD::InitializeHUDWidgets()
-{
-	if (HUDWidgetsToInitialize.Num() == 0)
+	if (!WidgetTree)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("InitializeHUDWidgets called but HudWidgetsToInitialize is empty."));
+		UE_LOG(LogTemp, Warning, TEXT("%s failed to register HUD widgets: WidgetTree is invalid."), *GetNameSafe(this));
 		return;
 	}
 
-	for (const TSubclassOf<UUserWidget>& WidgetClass : HUDWidgetsToInitialize)
+	WidgetTree->ForEachWidget([this](UWidget* Widget)
 	{
-		if (!IsValid(WidgetClass))
+		UVacancyUserWidgetBase* VacancyWidget = Cast<UVacancyUserWidgetBase>(Widget);
+		if (!IsValid(VacancyWidget))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("InitializeHUDWidgets: WidgetClass is null."));
-			continue;
+			return;
 		}
 
-		UVacancyUserWidgetBase* NewWidget = CreateWidget<UVacancyUserWidgetBase>(GetWorld(), WidgetClass);
-		if (!IsValid(NewWidget))
+		const FVacancyWidgetData WidgetData = VacancyWidget->GetWidgetData();
+
+		if (WidgetData.HUDElementType == EVacancyHUDElementType::None)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("InitializeHUDWidgets: Failed to create widget of class %s."), *GetNameSafe(WidgetClass));
-			continue;
+			return;
 		}
 
-		//init the widget and add it to the viewport
-		NewWidget->InitializeVacancyWidget();
-		NewWidget->AddToViewport();
+		if (RegisteredHUDElements.Contains(WidgetData.HUDElementType))
+		{
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("%s is overwriting duplicate HUD element type %d with widget %s."),
+				*GetNameSafe(this),
+				static_cast<int32>(WidgetData.HUDElementType),
+				*GetNameSafe(VacancyWidget)
+			);
+		}
 
-		//show or hide the widget based on the bAutoShowWidgetOnConstruction property in the widget's data
-		const bool bAutoShowWidget = NewWidget->GetWidgetData().bAutoShowWidgetOnConstruction;
-		NewWidget->SetVisibility(bAutoShowWidget ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
-	}
+		RegisteredHUDElements.Add(WidgetData.HUDElementType, VacancyWidget);
+
+		VacancyWidget->InitializeVacancyWidget(GetOwningVacancyHUD());
+	});
 }
 
-UVacancyUserWidgetBase* UPlayerGameplayHUD::GetHUDWidgetByType(const EVacancyHUDType HUDType) const
+UVacancyUserWidgetBase* UPlayerGameplayHUD::GetHUDWidgetByElementType(
+	const EVacancyHUDElementType HUDElementType) const
 {
-	if (HUDType == EVacancyHUDType::None)
+	if (HUDElementType == EVacancyHUDElementType::None)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GetHUDWidgetByType called with HUDType None."));
 		return nullptr;
 	}
-	
-	return UVacancyUIUtils::GetHUDElementByType(Cast<AVacancyPlayerCharacter>(GetOwningPlayerPawn()), HUDType);
+
+	if (const TObjectPtr<UVacancyUserWidgetBase>* FoundWidget = RegisteredHUDElements.Find(HUDElementType))
+	{
+		return FoundWidget->Get();
+	}
+
+	return nullptr;
+}
+
+UPlayerActiveToolHUD* UPlayerGameplayHUD::GetActiveToolHUD() const
+{
+	return Cast<UPlayerActiveToolHUD>(GetHUDWidgetByElementType(EVacancyHUDElementType::ToolHUD));
+}
+
+UPlayerToolHUDSuite* UPlayerGameplayHUD::GetToolHUDSuite() const
+{
+	return Cast<UPlayerToolHUDSuite>(GetHUDWidgetByElementType(EVacancyHUDElementType::ToolHUDSuite));
+}
+
+UPlayerCaseInventoryHUD* UPlayerGameplayHUD::GetCaseInventoryHUD() const
+{
+	return Cast<UPlayerCaseInventoryHUD>(GetHUDWidgetByElementType(EVacancyHUDElementType::CaseInventory));
+}
+
+UPlayerObjectiveHUD* UPlayerGameplayHUD::GetPlayerObjectiveHUD() const
+{
+	return Cast<UPlayerObjectiveHUD>(GetHUDWidgetByElementType(EVacancyHUDElementType::ObjectiveHUD));
+}
+
+UCaseClueHUDWidget* UPlayerGameplayHUD::GetCaseClueHUD() const
+{
+	return Cast<UCaseClueHUDWidget>(GetHUDWidgetByElementType(EVacancyHUDElementType::CaseHUD));
 }
