@@ -6,8 +6,10 @@
 #include "ToolData.h"
 #include "Components/Characters/Player/Tools/PlayerToolComponent.h"
 #include "GameFramework/Actor.h"
+#include "Systems/AbilitySystem/Abilities/Data/VacancyAbilityData.h"
 #include "BaseTool.generated.h"
 
+struct FVacancyAbilityData;
 struct FPlayerToolAttachmentStateInfo;
 class AVacancyPlayerCharacter;
 
@@ -31,12 +33,24 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Tool")
 	FORCEINLINE FToolDataRow GetToolData() const { return ToolData; }
+
+	UFUNCTION(BlueprintCallable, Category="Tool")
+	TArray<FVacancyAbilityData> GetToolAbilityDatas() const;
+
+	/**
+	 * Gives this tool's configured abilities to the player.
+	 *
+	 * Giving an already-granted ability is treated as success by the ASC.
+	 */
+	void GrantToolAbilities(
+		const AVacancyPlayerCharacter* ReceivingCharacter) const;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tool")
 	USkeletalMeshComponent* ToolMesh;
 
 	void SetToolAttachmentStateInfo(const FPlayerToolAttachmentStateInfo& NewToolAttachmentStateInfo);
 
+	
 	
 protected:
 	
@@ -54,4 +68,7 @@ protected:
 private:
 
 	FPlayerToolAttachmentStateInfo ToolAttachmentStateInfo;
+	FVacancyAbilityData ToolAbilityData;
+
+	static bool DebugTools();
 };

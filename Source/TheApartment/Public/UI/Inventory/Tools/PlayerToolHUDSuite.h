@@ -70,7 +70,7 @@ struct FVacancyToolHUDSlotData
  * - Phone state.
  * - Future tool states.
  *
- * UMG optional bind names:
+ * Widget bind names:
  * - CurrentToolNameText
  * - CurrentToolDetailText
  * - CameraToolText

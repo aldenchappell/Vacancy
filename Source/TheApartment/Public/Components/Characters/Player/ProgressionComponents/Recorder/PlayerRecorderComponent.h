@@ -16,6 +16,12 @@ public:
 	UPlayerRecorderComponent();
 
 	bool TryToggleRecorder(const bool bIsRecorderOn);
+
+	UFUNCTION(BlueprintCallable, Category = "Recorder")
+	bool SetRecordingEnabled(bool bEnabled);
+
+	UFUNCTION(BlueprintPure, Category = "Recorder")
+	bool CanStartRecording() const;
 protected:
 	
 	virtual void BeginPlay() override;

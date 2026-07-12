@@ -24,7 +24,7 @@ class UVerticalBox;
  * - FVacancyEvidenceData
  * - FVacancyClueSummaryData
  *
- * UMG optional bind names:
+ * Widget bind names:
  * - CaseTitleText
  * - CaseDescriptionText
  * - CaseLocationText
@@ -58,10 +58,10 @@ public:
 	void SetClueSummaryData(const TArray<FVacancyClueSummaryData>& NewClueSummaryData);
 
 	UFUNCTION(BlueprintCallable, Category = "Case Inventory HUD")
-	void SetSelectedEvidenceData(const FVacancyEvidenceData& SelectedEvidence);
+	void SetSelectedEvidenceData(const FVacancyEvidenceData& SelectedEvidence) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Case Inventory HUD")
-	void SetSelectedClueData(const FVacancyClueSummaryData& SelectedClue);
+	void SetSelectedClueData(const FVacancyClueSummaryData& SelectedClue) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Case Inventory HUD")
 	void ClearCaseInventoryHUD();

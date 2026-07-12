@@ -4,7 +4,19 @@
 #include "Systems/Items/Tools/BaseTool.h"
 
 #include "Characters/Player/VacancyPlayerCharacter.h"
+#include "Systems/AbilitySystem/VacancyAbilitySystemComponent.h"
+#include "Systems/AbilitySystem/Abilities/Data/VacancyAbilityData.h"
+#include "Systems/AbilitySystem/Abilities/ToolAbilities/BaseToolAbility.h"
 #include "UI/VacancyHUDData.h"
+
+static TAutoConsoleVariable<int32> CVarDebugTools(
+	TEXT("Vacancy.DebugTools"),
+	0,
+	TEXT("0: Disable Vacancy tool logs.\n")
+	TEXT("1: Enable Vacancy tool logs."),
+	ECVF_Default);
+
+static bool bDebugTools = false;
 
 
 ABaseTool::ABaseTool()
@@ -23,13 +35,29 @@ void ABaseTool::SetToolAttachmentStateInfo(const FPlayerToolAttachmentStateInfo&
 {
 	if (!IsValid(NewToolAttachmentStateInfo.AttachedTool))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SetToolAttachmentStateInfo called with null AttachedTool."));
+		if (DebugTools())
+		{
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("SetToolAttachmentStateInfo called with null AttachedTool for tool %s."),
+				*GetNameSafe(this));
+		}
+		
 		return;
 	}
 
 	if (!IsValid(NewToolAttachmentStateInfo.ToolClass))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SetToolAttachmentStateInfo called with null ToolClass."));
+		if (DebugTools())
+		{
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("SetToolAttachmentStateInfo called with null ToolClass for tool %s."),
+				*GetNameSafe(NewToolAttachmentStateInfo.AttachedTool));
+		}
+
 		return;
 	}
 
@@ -41,6 +69,7 @@ void ABaseTool::BeginPlay()
 	Super::BeginPlay();
 	
 }
+
 
 void ABaseTool::OnToolEquipped_Implementation(AVacancyPlayerCharacter* UnequippingCharacter)
 {
@@ -87,4 +116,126 @@ void ABaseTool::OnToolUnequipped_Implementation(AVacancyPlayerCharacter* Unequip
 FName ABaseTool::GetToolAttachSocket() const
 {
 	return ToolAttachmentStateInfo.ToolAttachSocket;
+}
+
+TArray<FVacancyAbilityData> ABaseTool::GetToolAbilityDatas() const
+{
+	if (ToolData.ToolAbilityClasses.IsEmpty())
+	{
+		if (DebugTools())
+		{
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("%s does not have any ToolAbilityClasses."),
+				*GetNameSafe(this));
+		}
+
+		return TArray<FVacancyAbilityData>();
+	}
+
+	for (const TSubclassOf<UBaseToolAbility>& AbilityClass : ToolData.ToolAbilityClasses)
+	{
+		if (!IsValid(AbilityClass))
+		{
+			if (DebugTools())
+			{
+				UE_LOG(
+					LogTemp,
+					Warning,
+					TEXT("%s contains a null tool ability class."),
+					*GetNameSafe(this));
+			}
+
+			continue;
+		}
+
+		const FVacancyAbilityData* AbilityData = AbilityClass->GetDefaultObject<UBaseToolAbility>()->GetVacancyAbilityDataPtr();
+		if (!AbilityData || !AbilityData->IsValidAbilityData())
+		{
+			if (DebugTools())
+			{
+				UE_LOG(
+					LogTemp,
+					Warning,
+					TEXT("%s contains an invalid tool ability data."),
+					*GetNameSafe(this));
+			}
+
+			continue;
+		}
+
+		return TArray{ *AbilityData };
+	}
+
+	if (DebugTools())
+	{
+		UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("%s does not have any valid tool ability data."),
+		*GetNameSafe(this));
+	}
+	
+	return TArray<FVacancyAbilityData>();
+}
+
+void ABaseTool::GrantToolAbilities(
+	const AVacancyPlayerCharacter* ReceivingCharacter) const
+{
+	if (!IsValid(ReceivingCharacter))
+	{
+		if (DebugTools())
+		{
+			UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("GrantToolAbilities failed for %s: character is invalid."),
+			*GetNameSafe(this));
+		}
+		
+		return;
+	}
+
+	UVacancyAbilitySystemComponent* AbilitySystem =
+		ReceivingCharacter->GetVacancyAbilitySystemComponent();
+
+	if (!IsValid(AbilitySystem))
+	{
+		if (DebugTools())
+		{
+			UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("GrantToolAbilities failed for %s: ASC is invalid."),
+			*GetNameSafe(this));
+		}
+
+		return;
+	}
+
+	for (const TSubclassOf<UBaseToolAbility>& AbilityClass
+		: ToolData.ToolAbilityClasses)
+	{
+		if (!AbilityClass)
+		{
+			if (DebugTools())
+			{
+				UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("GrantToolAbilities failed for %s: AbilityClass is null."),
+				*GetNameSafe(this));
+			}
+
+			continue;
+		}
+
+		AbilitySystem->TryGiveAbilityByClass(AbilityClass);
+	}
+}
+
+bool ABaseTool::DebugTools()
+{
+	return bDebugTools;
 }

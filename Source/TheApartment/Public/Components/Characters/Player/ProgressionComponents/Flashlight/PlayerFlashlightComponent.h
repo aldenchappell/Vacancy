@@ -17,6 +17,11 @@ public:
 
 	void ToggleFlashlight(const bool bActive);
 
+	UFUNCTION(BlueprintCallable, Category = "Flashlight")
+	bool SetFlashlightEnabled(bool bEnabled);
+
+	UFUNCTION(BlueprintPure, Category = "Flashlight")
+	bool CanEnableFlashlight() const;
 protected:
 	
 	virtual void BeginPlay() override;
