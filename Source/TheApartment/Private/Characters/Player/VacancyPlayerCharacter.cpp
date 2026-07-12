@@ -16,6 +16,11 @@
 #include "Components/Characters/Player/Tools/PlayerToolComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "AbilitySystemComponent.h"
+#include "EnhancedInputComponent.h"
+#include "InputActionValue.h"
+#include "Systems/AbilitySystem/VacancyAbilitySystemComponent.h"
+#include "Systems/AbilitySystem/Abilities/VacancyGameplayAbility.h"
 #include "Systems/Items/Tools/BaseTool.h"
 #include "UI/VacancyHUD.h"
 #include "Utilities/Gameplay/VacancyUIUtils.h"
@@ -78,16 +83,87 @@ AVacancyPlayerCharacter::AVacancyPlayerCharacter()
 		MovementComponent->NavAgentProps.bCanCrouch = true;
 		MovementComponent->bOrientRotationToMovement = false;
 	}
+
+	// -------------------------------------------------------------------------
+	// Ability System Setup
+	// -------------------------------------------------------------------------
+	
+	AbilitySystemComponent = CreateDefaultSubobject<UVacancyAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 }
 
 void AVacancyPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	InitializeAbilitySystem();
+	GrantStartupAbilities();
 }
 
 void AVacancyPlayerCharacter::Tick(const float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AVacancyPlayerCharacter::SetupPlayerInputComponent(
+	UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	UEnhancedInputComponent* EnhancedInputComponent =
+		Cast<UEnhancedInputComponent>(PlayerInputComponent);
+
+	if (!IsValid(EnhancedInputComponent))
+	{
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT(
+				"%s requires UEnhancedInputComponent, but received %s."),
+			*GetNameSafe(this),
+			*GetNameSafe(PlayerInputComponent));
+
+		return;
+	}
+
+	for (const FVacancyAbilityInputBinding& Binding
+		: AbilityInputBindings)
+	{
+		if (!Binding.IsValid())
+		{
+			UE_LOG(
+				LogTemp,
+				Warning,
+				TEXT("%s contains an invalid ability input binding."),
+				*GetNameSafe(this));
+
+			continue;
+		}
+
+		EnhancedInputComponent->BindAction(
+			Binding.InputAction,
+			ETriggerEvent::Started,
+			this,
+			&ThisClass::HandleAbilityInputPressed,
+			Binding.InputTag);
+
+		EnhancedInputComponent->BindAction(
+			Binding.InputAction,
+			ETriggerEvent::Completed,
+			this,
+			&ThisClass::HandleAbilityInputReleased,
+			Binding.InputTag);
+
+		/*
+		 * Canceled covers cases where an input loses eligibility while held,
+		 * such as a mapping context being removed.
+		 */
+		EnhancedInputComponent->BindAction(
+			Binding.InputAction,
+			ETriggerEvent::Canceled,
+			this,
+			&ThisClass::HandleAbilityInputReleased,
+			Binding.InputTag);
+	}
 }
 
 void AVacancyPlayerCharacter::UpdateAnimPropsForEquippedTool(const ABaseTool* EquippedTool) const
@@ -233,3 +309,80 @@ AVacancyHUD* AVacancyPlayerCharacter::GetVacancyHUD() const
 
 	return VacancyHUD;
 }
+
+#pragma region Ability System
+
+	void AVacancyPlayerCharacter::InitializeAbilitySystem()
+{
+	if (!IsValid(AbilitySystemComponent))
+	{
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("%s does not have a valid AbilitySystemComponent."),
+			*GetNameSafe(this));
+
+		return;
+	}
+
+	/*
+	 * The player owns the ASC and is also its physical avatar.
+	 */
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+}
+
+void AVacancyPlayerCharacter::GrantStartupAbilities()
+{
+	if (!HasAuthority() || !IsValid(AbilitySystemComponent))
+	{
+		return;
+	}
+
+	AbilitySystemComponent->TryGiveAbilitiesByClass(
+		StartupAbilities);
+}
+
+UAbilitySystemComponent*
+AVacancyPlayerCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+FGameplayTagContainer
+AVacancyPlayerCharacter::GetActivePlayerTags() const
+{
+	FGameplayTagContainer OwnedTags;
+
+	if (IsValid(AbilitySystemComponent))
+	{
+		AbilitySystemComponent->GetOwnedGameplayTags(OwnedTags);
+	}
+
+	return OwnedTags;
+}
+
+void AVacancyPlayerCharacter::HandleAbilityInputPressed(
+	const FInputActionValue& InputValue,
+	const FGameplayTag InputTag)
+{
+	if (!IsValid(AbilitySystemComponent))
+	{
+		return;
+	}
+
+	AbilitySystemComponent->AbilityInputTagPressed(InputTag);
+}
+
+void AVacancyPlayerCharacter::HandleAbilityInputReleased(
+	const FInputActionValue& InputValue,
+	const FGameplayTag InputTag)
+{
+	if (!IsValid(AbilitySystemComponent))
+	{
+		return;
+	}
+
+	AbilitySystemComponent->AbilityInputTagReleased(InputTag);
+}
+
+#pragma endregion

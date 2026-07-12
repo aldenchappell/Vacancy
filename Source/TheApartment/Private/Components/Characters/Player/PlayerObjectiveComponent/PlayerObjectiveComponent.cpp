@@ -136,7 +136,7 @@ void UPlayerObjectiveComponent::InitializePlayerObjectives()
 		return;
 	}
 
-	for (const TSubclassOf<UBaseVacancyCaseObjective> ObjectiveClass : DefaultObjectives)
+	for (const TSubclassOf ObjectiveClass : DefaultObjectives)
 	{
 		if (!IsValid(ObjectiveClass))
 		{

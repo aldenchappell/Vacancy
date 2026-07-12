@@ -18,7 +18,17 @@ public:
 
 	void ToggleCamera(const bool bActive);
 
-	bool TryTakePhoto() const;
+	UFUNCTION(BlueprintCallable, Category = "Camera")
+	bool SetCameraModeEnabled(bool bEnabled);
+
+	UFUNCTION(BlueprintPure, Category = "Camera")
+	bool CanEnterCameraMode() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Camera")
+	bool TryTakePhoto();
+
+	UFUNCTION(BlueprintPure, Category = "Camera")
+	bool CanTakePhoto() const;
 protected:
 	
 	virtual void BeginPlay() override;

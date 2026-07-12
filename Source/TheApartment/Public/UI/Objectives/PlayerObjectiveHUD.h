@@ -38,13 +38,13 @@ class THEAPARTMENT_API UPlayerObjectiveHUD : public UVacancyUserWidgetBase
 public:
 
 	UFUNCTION(BlueprintCallable, Category = "Objective HUD")
-	void SetObjectiveData(const FVacancyCaseObjectiveData& NewObjectiveData, EVacancyCaseObjectiveStatus NewObjectiveStatus);
+	void SetObjectiveData(const FVacancyCaseObjectiveData& NewObjectiveData, const EVacancyCaseObjectiveStatus NewObjectiveStatus);
 
 	UFUNCTION(BlueprintCallable, Category = "Objective HUD")
 	void SetObjectiveFromObject(const UBaseVacancyCaseObjective* Objective);
 
 	UFUNCTION(BlueprintCallable, Category = "Objective HUD")
-	void SetObjectiveStatus(EVacancyCaseObjectiveStatus NewObjectiveStatus);
+	void SetObjectiveStatus(const EVacancyCaseObjectiveStatus NewObjectiveStatus);
 
 	UFUNCTION(BlueprintCallable, Category = "Objective HUD")
 	void ClearObjectiveHUD();
@@ -82,7 +82,7 @@ private:
 	static void SetTextBlockText(UTextBlock* TextBlock, const FText& NewText, const TCHAR* DebugName);
 	void RebuildObjectiveList();
 
-	static FText GetObjectiveStatusText(EVacancyCaseObjectiveStatus Status);
+	static FText GetObjectiveStatusText(const EVacancyCaseObjectiveStatus Status);
 	FText GetActiveObjectiveDisplayText() const;
 	FText GetProgressText() const;
 

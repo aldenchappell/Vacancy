@@ -15,6 +15,12 @@ class THEAPARTMENT_API UPlayerPhoneComponent : public UBasePlayerProgressionComp
 public:
 	UPlayerPhoneComponent();
 
+	UFUNCTION(BlueprintCallable, Category = "Phone")
+	bool SetPhoneOpen(bool bOpen);
+
+	UFUNCTION(BlueprintPure, Category = "Phone")
+	bool CanOpenPhone() const;
+
 protected:
 	
 	virtual void BeginPlay() override;

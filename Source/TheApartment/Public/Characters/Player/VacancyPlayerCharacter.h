@@ -6,8 +6,11 @@
 #include "GameplayTagContainer.h"
 #include "Characters/VacancyCharacter.h"
 #include "UI/VacancyHUDData.h"
+#include "AbilitySystemInterface.h"
+#include "GameplayTagContainer.h"
 #include "VacancyPlayerCharacter.generated.h"
 
+class UVacancyAbilitySystemComponent;
 class ABaseTool;
 class AVacancyHUD;
 
@@ -25,8 +28,33 @@ class UPlayerCameraComponent;
 class UPlayerPhoneComponent;
 class UPlayerRecorderComponent;
 
+class UInputAction;
+class UVacancyGameplayAbility;
+class UAbilitySystemComponent;
+struct FInputActionValue;
+
+/**
+ * Connects one Enhanced Input action to one GAS input tag.
+ */
+USTRUCT(BlueprintType)
+struct FVacancyAbilityInputBinding
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability Input")
+	TObjectPtr<UInputAction> InputAction = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability Input")
+	FGameplayTag InputTag;
+
+	bool IsValid() const
+	{
+		return InputAction != nullptr && InputTag.IsValid();
+	}
+};
+
 UCLASS()
-class THEAPARTMENT_API AVacancyPlayerCharacter : public AVacancyCharacter
+class THEAPARTMENT_API AVacancyPlayerCharacter : public AVacancyCharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -35,6 +63,20 @@ public:
 	AVacancyPlayerCharacter();
 
 	virtual void Tick(float DeltaTime) override;
+
+	virtual void SetupPlayerInputComponent(
+	UInputComponent* PlayerInputComponent) override;
+
+	/**
+	 * Required by IAbilitySystemInterface.
+	 */
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	UFUNCTION(BlueprintPure, Category = "Vacancy|Abilities")
+	UVacancyAbilitySystemComponent* GetVacancyAbilitySystemComponent() const
+	{
+		return AbilitySystemComponent;
+	}
 
 	// -------------------------------------------------------------------------
 	// Animation
@@ -119,8 +161,20 @@ protected:
 	// Player State
 	// -------------------------------------------------------------------------
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player")
-	FGameplayTagContainer ActivePlayerTags;
+	/**
+	 * Abilities automatically granted when the player begins play.
+	 *
+	 * Tool abilities that are unlocked later can be granted by their progression
+	 * or acquisition systems instead.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Vacancy|Abilities")
+	TArray<TSubclassOf<UVacancyGameplayAbility>> StartupAbilities;
+
+	/**
+	 * Enhanced Input actions and the GAS input tags they represent.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Vacancy|Abilities|Input")
+	TArray<FVacancyAbilityInputBinding> AbilityInputBindings;
 
 #pragma region Actor Components
 
@@ -154,6 +208,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UPlayerRecorderComponent> PlayerRecorderComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UVacancyAbilitySystemComponent> AbilitySystemComponent;
+
 #pragma endregion
 
 private:
@@ -166,11 +223,46 @@ private:
 	 */
 	AVacancyHUD* GetVacancyHUD() const;
 
+	void InitializeAbilitySystem();
+	void GrantStartupAbilities();
+
+	void HandleAbilityInputPressed(
+		const FInputActionValue& InputValue,
+		FGameplayTag InputTag);
+
+	void HandleAbilityInputReleased(
+		const FInputActionValue& InputValue,
+		FGameplayTag InputTag);
+	
 public:
 
 	UFUNCTION(BlueprintPure, Category = "Player")
-	FGameplayTagContainer GetActivePlayerTags() const { return ActivePlayerTags; }
+	FGameplayTagContainer GetActivePlayerTags() const;
 
 	UFUNCTION(BlueprintPure, Category = "Components")
 	FORCEINLINE UPlayerToolComponent* GetPlayerToolComponent() const { return PlayerToolComponent; }
+
+	UFUNCTION(BlueprintPure, Category = "Components")
+	UPlayerFlashlightComponent* GetPlayerFlashlightComponent() const
+	{
+		return PlayerFlashlightComponent;
+	}
+
+	UFUNCTION(BlueprintPure, Category = "Components")
+	UPlayerCameraComponent* GetPlayerCameraComponent() const
+	{
+		return PlayerCameraComponent;
+	}
+
+	UFUNCTION(BlueprintPure, Category = "Components")
+	UPlayerRecorderComponent* GetPlayerRecorderComponent() const
+	{
+		return PlayerRecorderComponent;
+	}
+
+	UFUNCTION(BlueprintPure, Category = "Components")
+	UPlayerPhoneComponent* GetPlayerPhoneComponent() const
+	{
+		return PlayerPhoneComponent;
+	}
 };

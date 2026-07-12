@@ -20,6 +20,8 @@ public class TheApartment : ModuleRules
 			"EnhancedInput",
 			"AssetRegistry",
 			"Niagara",
+			"GameplayAbilities",
+			"GameplayTasks",
 			
 			// UI dependencies
 			"UMG",
@@ -28,9 +30,6 @@ public class TheApartment : ModuleRules
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
-
-		// Uncomment if you are using Slate UI
-		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 		
 		// Uncomment if you are using online features
 		// PrivateDependencyModuleNames.Add("OnlineSubsystem");

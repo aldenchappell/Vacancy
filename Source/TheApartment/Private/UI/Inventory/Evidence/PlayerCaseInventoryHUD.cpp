@@ -37,13 +37,13 @@ void UPlayerCaseInventoryHUD::SetClueSummaryData(const TArray<FVacancyClueSummar
 	UpdateCaseInventoryHUD();
 }
 
-void UPlayerCaseInventoryHUD::SetSelectedEvidenceData(const FVacancyEvidenceData& SelectedEvidence)
+void UPlayerCaseInventoryHUD::SetSelectedEvidenceData(const FVacancyEvidenceData& SelectedEvidence) const
 {
 	SetTextBlockText(SelectedEntryTitleText, SelectedEvidence.EvidenceDisplayTitle, TEXT("SelectedEntryTitleText"));
 	SetTextBlockText(SelectedEntryDescriptionText, SelectedEvidence.EvidenceDisplayName, TEXT("SelectedEntryDescriptionText"));
 }
 
-void UPlayerCaseInventoryHUD::SetSelectedClueData(const FVacancyClueSummaryData& SelectedClue)
+void UPlayerCaseInventoryHUD::SetSelectedClueData(const FVacancyClueSummaryData& SelectedClue) const
 {
 	SetTextBlockText(SelectedEntryTitleText, FText::FromName(SelectedClue.ClueID), TEXT("SelectedEntryTitleText"));
 	SetTextBlockText(SelectedEntryDescriptionText, SelectedClue.ClueDisplaySummaryText, TEXT("SelectedEntryDescriptionText"));
@@ -119,6 +119,11 @@ void UPlayerCaseInventoryHUD::RebuildEvidenceList()
 			continue;
 		}
 
+		if (EvidenceData.EvidenceDisplayTitle.IsEmpty())
+		{
+			continue;
+		}
+
 		RowText->SetText(EvidenceData.EvidenceDisplayTitle);
 		RowText->SetAutoWrapText(true);
 
@@ -179,14 +184,14 @@ FText UPlayerCaseInventoryHUD::GetCaseStatusText(const EVacancyCaseFileStatus St
 {
 	switch (Status)
 	{
-	case EVacancyCaseFileStatus::Open:
-		return FText::FromString("OPEN");
+		case EVacancyCaseFileStatus::Open:
+			return FText::FromString("OPEN");
 
-	case EVacancyCaseFileStatus::Closed:
-		return FText::FromString("CLOSED");
+		case EVacancyCaseFileStatus::Closed:
+			return FText::FromString("CLOSED");
 
-	default:
-		return FText::FromString("UNKNOWN");
+		default:
+			return FText::FromString("UNKNOWN");
 	}
 }
 
@@ -194,16 +199,16 @@ FText UPlayerCaseInventoryHUD::GetClueTierText(const EVacancyClueTier Tier)
 {
 	switch (Tier)
 	{
-	case EVacancyClueTier::Low:
-		return FText::FromString("LOW");
+		case EVacancyClueTier::Low:
+			return FText::FromString("LOW");
 
-	case EVacancyClueTier::Medium:
-		return FText::FromString("MED");
+		case EVacancyClueTier::Medium:
+			return FText::FromString("MED");
 
-	case EVacancyClueTier::High:
-		return FText::FromString("HIGH");
+		case EVacancyClueTier::High:
+			return FText::FromString("HIGH");
 
-	default:
-		return FText::FromString("UNK");
+		default:
+			return FText::FromString("UNK");
 	}
 }
