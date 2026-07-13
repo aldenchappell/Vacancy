@@ -19,3 +19,13 @@ bool UPlayerRecorderComponent::TryToggleRecorder(const bool bIsRecorderOn)
 {
 	return false;
 }
+
+bool UPlayerRecorderComponent::SetRecordingEnabled(bool bEnabled)
+{
+	return true;
+}
+
+bool UPlayerRecorderComponent::CanStartRecording() const
+{
+	return true;
+}

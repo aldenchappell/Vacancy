@@ -9,6 +9,16 @@ UPlayerPhoneComponent::UPlayerPhoneComponent()
 
 }
 
+bool UPlayerPhoneComponent::SetPhoneOpen(bool bOpen)
+{
+	return true;
+}
+
+bool UPlayerPhoneComponent::CanOpenPhone() const
+{
+	return true;
+}
+
 void UPlayerPhoneComponent::BeginPlay()
 {
 	Super::BeginPlay();
