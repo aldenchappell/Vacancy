@@ -19,3 +19,13 @@ void UPlayerFlashlightComponent::ToggleFlashlight(const bool bActive)
 {
 	
 }
+
+bool UPlayerFlashlightComponent::SetFlashlightEnabled(bool bEnabled)
+{
+	return true;
+}
+
+bool UPlayerFlashlightComponent::CanEnableFlashlight() const
+{
+	return true;
+}

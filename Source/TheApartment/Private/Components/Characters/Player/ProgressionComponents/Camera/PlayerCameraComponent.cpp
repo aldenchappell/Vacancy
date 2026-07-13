@@ -20,8 +20,23 @@ void UPlayerCameraComponent::ToggleCamera(const bool bActive)
 	
 }
 
-bool UPlayerCameraComponent::TryTakePhoto() const
+bool UPlayerCameraComponent::SetCameraModeEnabled(bool bEnabled)
 {
-	return false;
+	return true;
+}
+
+bool UPlayerCameraComponent::CanEnterCameraMode() const
+{
+	return true;
+}
+
+bool UPlayerCameraComponent::TryTakePhoto()
+{
+	return true;
+}
+
+bool UPlayerCameraComponent::CanTakePhoto() const
+{
+	return true;
 }
 

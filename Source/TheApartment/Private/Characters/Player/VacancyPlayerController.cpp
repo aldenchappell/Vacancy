@@ -760,7 +760,7 @@ void AVacancyPlayerController::OnTakePhotoPressed_Implementation()
 		return;
 	}
 
-	const UPlayerCameraComponent* CameraComp = UVacancyPlayerUtils::GetPlayerComponent<UPlayerCameraComponent>(GetControlledCharacter());
+	UPlayerCameraComponent* CameraComp = UVacancyPlayerUtils::GetPlayerComponent<UPlayerCameraComponent>(GetControlledCharacter());
 	if (!CameraComp)
 	{
 		UE_LOG(

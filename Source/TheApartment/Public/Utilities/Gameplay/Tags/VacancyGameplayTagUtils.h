@@ -13,4 +13,6 @@ UCLASS()
 class THEAPARTMENT_API UVacancyGameplayTagUtils : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
+
+	
 };
